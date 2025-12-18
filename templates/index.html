@@ -23,13 +23,12 @@
             --bg-hover: #1a1a1a;
             --bg-dropdown: #1a1a1a;
             --border-color: #222;
-            --accent-color: #00ff9d; /* Cyber Green */
+            --accent-color: #00ff9d;
             --text-primary: #e0e0e0;
             --text-secondary: #888;
-            --user-bubble-bg: #262626; /* Dark Grey Bubble */
+            --user-bubble-bg: #262626;
             --user-bubble-text: #fff;
             --bot-bubble-border: #00ff9d;
-            --shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
         :root[data-theme="light"] {
@@ -40,13 +39,12 @@
             --bg-hover: #e5e5ea;
             --bg-dropdown: #ffffff;
             --border-color: #d1d1d6;
-            --accent-color: #007aff; /* iOS Blue */
+            --accent-color: #007aff;
             --text-primary: #000000;
             --text-secondary: #666;
-            --user-bubble-bg: #007aff; /* Blue Bubble */
+            --user-bubble-bg: #007aff;
             --user-bubble-text: #fff;
             --bot-bubble-border: #007aff;
-            --shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         /* --- GLOBAL --- */
@@ -86,21 +84,18 @@
         .item-options-btn { opacity: 0; margin-left: auto; color: var(--text-secondary); transition: 0.2s; }
         .chat-item:hover .item-options-btn { opacity: 1; }
 
-        /* --- SETTINGS AREA (BOTTOM LEFT) --- */
-        .sidebar-footer {
-            padding: 15px; border-top: 1px solid var(--border-color); position: relative;
-        }
+        /* --- SETTINGS AREA --- */
+        .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); position: relative; }
         .settings-trigger {
             display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; border-radius: 8px;
             color: var(--text-primary); transition: 0.2s;
         }
         .settings-trigger:hover { background: var(--bg-hover); }
 
-        /* Settings Menu Popup */
         #settings-menu {
             position: absolute; bottom: 70px; left: 10px; width: 240px;
             background: var(--bg-dropdown); border: 1px solid var(--border-color);
-            border-radius: 12px; box-shadow: var(--shadow); padding: 5px;
+            border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); padding: 5px;
             display: none; z-index: 1000;
         }
         .settings-item {
@@ -115,11 +110,9 @@
         
         .top-nav {
             height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px;
-            /* border-bottom: 1px solid var(--border-color); Removed divider for cleaner look */
             position: absolute; top:0; right: 0; width: 100%; box-sizing: border-box; z-index: 10;
         }
 
-        /* Profile Top Right */
         .user-chip {
             display: flex; align-items: center; gap: 10px; padding: 5px 10px;
             border-radius: 20px; cursor: pointer; transition: 0.2s; background: rgba(0,0,0,0.2);
@@ -132,44 +125,33 @@
         #chat-scroll-area { flex: 1; overflow-y: auto; padding-top: 70px; padding-bottom: 20px; }
         .message-container { max-width: 800px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; }
 
-        /* --- BUBBLES --- */
+        /* Bubbles */
         .message { margin-bottom: 20px; display: flex; flex-direction: column; max-width: 85%; }
-        
-        /* User Bubble Styling */
         .message.user { align-self: flex-end; align-items: flex-end; }
         .message.user .message-content {
-            background: var(--user-bubble-bg);
-            color: var(--user-bubble-text);
-            padding: 10px 16px;
-            border-radius: 18px 18px 4px 18px; /* Classic bubble shape */
-            font-size: 1rem;
-            line-height: 1.5;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            background: var(--user-bubble-bg); color: var(--user-bubble-text); padding: 10px 16px;
+            border-radius: 18px 18px 4px 18px; font-size: 1rem; line-height: 1.5;
         }
-        
-        /* Bot Bubble Styling (Outlined) */
         .message.bot { align-self: flex-start; align-items: flex-start; width: 100%; max-width: 90%; }
         .message.bot .message-content {
-            background: transparent;
-            border: 1px solid var(--bot-bubble-border); /* Outlined */
-            color: var(--text-primary);
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 1rem;
-            line-height: 1.6;
-            width: 100%;
+            background: transparent; border: 1px solid var(--bot-bubble-border);
+            color: var(--text-primary); padding: 15px; border-radius: 12px; font-size: 1rem; line-height: 1.6; width: 100%;
         }
 
-        /* Code Blocks */
         pre { background: #1e1e1e !important; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; margin-top: 10px;}
         code { font-family: 'Consolas', monospace; }
 
-        /* Input Area */
+        /* --- INPUT AREA WITH PREVIEW --- */
         .input-footer { padding: 20px; display: flex; justify-content: center; }
         .input-box-wrapper {
             width: 100%; max-width: 800px; background: var(--bg-input); border: 1px solid var(--border-color);
-            border-radius: 24px; padding: 10px 20px; display: flex; align-items: flex-end; gap: 10px;
+            border-radius: 24px; padding: 10px 20px; display: flex; flex-direction: column;
+            gap: 8px; transition: border-color 0.2s;
         }
+        .input-box-wrapper:focus-within { border-color: var(--accent-color); }
+        
+        .input-row { display: flex; align-items: flex-end; gap: 10px; width: 100%; }
+        
         textarea {
             flex: 1; background: transparent; border: none; color: var(--text-primary);
             resize: none; max-height: 150px; min-height: 24px; font-size: 1rem; outline: none; padding: 4px 0;
@@ -180,20 +162,38 @@
         }
         .send-btn:disabled { background: var(--border-color); cursor: default; }
 
-        /* --- MODALS --- */
+        /* PROPER IMAGE PREVIEW STYLING */
+        #image-preview-container {
+            display: none; width: 60px; height: 60px; position: relative; 
+            border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color);
+            animation: fadeIn 0.3s;
+        }
+        .preview-thumb {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .remove-file-btn {
+            position: absolute; top: 2px; right: 2px;
+            background: rgba(0,0,0,0.6); color: white;
+            border-radius: 50%; width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .remove-file-btn:hover { background: rgba(0,0,0,0.8); }
+        .remove-file-btn span { font-size: 14px; font-weight: bold; }
+
+        /* Modals & Overlays */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6);
             display: none; align-items: center; justify-content: center; z-index: 2000;
         }
         .modal-card {
             background: var(--bg-dropdown); border: 1px solid var(--border-color);
-            width: 350px; padding: 30px; border-radius: 16px; box-shadow: var(--shadow);
+            width: 350px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             text-align: center; position: relative;
         }
         .modal-close { position: absolute; top: 15px; right: 15px; cursor: pointer; color: var(--text-secondary); }
         .profile-large-img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; border: 2px solid var(--accent-color); }
         
-        /* Welcome Screen */
         #welcome-screen {
             position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
             text-align: center; display: none; width: 100%;
@@ -206,7 +206,6 @@
         }
         .suggestion-chip:hover { border-color: var(--accent-color); }
 
-        /* Login Overlay */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -253,8 +252,7 @@
                 </button>
             </div>
 
-            <div id="history-list">
-                </div>
+            <div id="history-list"></div>
 
             <div class="sidebar-footer">
                 <div class="settings-trigger" onclick="toggleSettingsMenu()">
@@ -304,17 +302,25 @@
 
             <div class="input-footer">
                 <div class="input-box-wrapper">
-                    <input type="file" id="image-upload" style="display:none" onchange="handleFileSelect()">
-                    <label for="image-upload" style="cursor:pointer; color:var(--text-secondary); padding-bottom:5px;">
-                        <span class="material-symbols-outlined">attach_file</span>
-                    </label>
-                    <div id="file-indicator" style="display:none; color:var(--accent-color); font-size:0.8rem; margin-bottom:5px;">[Image Attached]</div>
-                    
-                    <textarea id="user-input" rows="1" placeholder="Enter target data..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="handleEnter(event)"></textarea>
-                    
-                    <button class="send-btn" onclick="sendMessage()">
-                        <span class="material-symbols-outlined icon-sm">arrow_upward</span>
-                    </button>
+                    <div id="image-preview-container">
+                        <img id="image-preview-element" class="preview-thumb">
+                        <div class="remove-file-btn" onclick="clearFile()">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <input type="file" id="image-upload" style="display:none" onchange="handleFileSelect()">
+                        <label for="image-upload" style="cursor:pointer; color:var(--text-secondary); padding-bottom:5px;">
+                            <span class="material-symbols-outlined">attach_file</span>
+                        </label>
+                        
+                        <textarea id="user-input" rows="1" placeholder="Enter target data..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="handleEnter(event)"></textarea>
+                        
+                        <button class="send-btn" onclick="sendMessage()">
+                            <span class="material-symbols-outlined icon-sm">arrow_upward</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -327,7 +333,7 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
+    // --- FIREBASE CONFIG (ADD YOURS HERE) ---
     const firebaseConfig = {
       apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
       authDomain: "osint-ai-eaf84.firebaseapp.com",
@@ -348,18 +354,15 @@
             currentUserToken = await user.getIdToken();
             currentUserName = user.displayName || "Agent";
             
-            // UI Updates
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('app-content').style.filter = 'none';
             document.getElementById('app-content').style.pointerEvents = 'all';
             
-            // Header Info
             document.getElementById('header-name').innerText = currentUserName;
             const photo = user.photoURL || 'https://www.gravatar.com/avatar/?d=mp';
             document.getElementById('header-img').src = photo;
             document.getElementById('welcome-user-name').innerText = currentUserName.split(' ')[0];
 
-            // Modal Info
             document.getElementById('modal-name').innerText = currentUserName;
             document.getElementById('modal-email').innerText = user.email;
             document.getElementById('modal-img').src = photo;
@@ -378,7 +381,6 @@
     
     function logout() { auth.signOut(); location.reload(); }
 
-    // --- FETCH OVERRIDE ---
     const originalFetch = window.fetch;
     window.fetch = async (url, options = {}) => {
         if (!options.headers) options.headers = {};
@@ -390,7 +392,29 @@
 <script>
     let currentSessionId = null;
     const API_URL = '';
-    let isSidebarCollapsed = false;
+    
+    // --- FILE HANDLING ---
+    function handleFileSelect() {
+        const fileInput = document.getElementById('image-upload');
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewContainer = document.getElementById('image-preview-container');
+                const previewImg = document.getElementById('image-preview-element');
+                previewImg.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function clearFile() {
+        const fileInput = document.getElementById('image-upload');
+        fileInput.value = '';
+        document.getElementById('image-preview-container').style.display = 'none';
+        document.getElementById('image-preview-element').src = '';
+    }
 
     // --- SESSION LOGIC ---
     async function loadSessions() {
@@ -438,9 +462,7 @@
         container.innerHTML = '';
         data.messages.forEach(m => appendMessage(m.sender, m.content));
         
-        // Update active state in sidebar
         document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
-        // Re-fetch list to ensure styling is correct (simple way)
         loadSessions();
     }
 
@@ -458,14 +480,15 @@
         appendMessage('user', text || "[Image Uploaded]");
         input.value = '';
         input.style.height = 'auto';
-        document.getElementById('file-indicator').style.display = 'none';
-        fileInput.value = ''; // reset file
+        
+        // Hide preview after sending
+        clearFile();
         
         const loadingId = appendLoading();
 
         const formData = new FormData();
         formData.append('session_id', currentSessionId);
-        formData.append('user_name', currentUserName); // SEND NAME
+        formData.append('user_name', currentUserName);
         if(text) formData.append('message', text);
         if(file) formData.append('image', file);
 
@@ -489,7 +512,6 @@
         div.innerHTML = `<div class="message-content">${contentHtml}</div>`;
         document.getElementById('chat-container').appendChild(div);
         
-        // Highlight code
         div.querySelectorAll('pre code').forEach(hljs.highlightElement);
         document.getElementById('chat-scroll-area').scrollTop = document.getElementById('chat-scroll-area').scrollHeight;
     }
@@ -528,14 +550,10 @@
         localStorage.setItem('theme', next);
     }
 
-    // Profile Modal
     function openProfile() { document.getElementById('profile-modal').style.display = 'flex'; }
     function closeProfile() { document.getElementById('profile-modal').style.display = 'none'; }
-
-    // Quick Actions
     function startQuickAction(text) { createNewSession(text); }
 
-    // Context Menu for Deletion
     function openContext(e, id) {
         e.stopPropagation();
         const menu = document.getElementById('context-menu');
@@ -551,30 +569,18 @@
         };
     }
     
-    // File Handler
-    function handleFileSelect() {
-        if(document.getElementById('image-upload').files.length > 0)
-            document.getElementById('file-indicator').style.display = 'block';
-    }
-    
-    // Global clicks to close menus
     document.addEventListener('click', (e) => {
         if(!e.target.closest('.settings-trigger')) document.getElementById('settings-menu').style.display = 'none';
         if(!e.target.closest('.item-options-btn')) document.getElementById('context-menu').style.display = 'none';
         if(e.target.className === 'modal-overlay') closeProfile();
     });
 
-    // Enter Key
     function handleEnter(e) {
         if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     }
 
-    // Load theme
     if(localStorage.getItem('theme') === 'light') toggleTheme();
-    // Initial Load
     window.onload = async () => {
-         // Wait for auth to trigger loadSessions
-         // But ensure welcome is shown initially
          toggleWelcome(true);
     };
 </script>
