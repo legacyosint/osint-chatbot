@@ -2,43 +2,44 @@ import os
 import psycopg2
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import google.generativeai as genai
+from google import genai # NEW IMPORT
+from google.genai import types # NEW IMPORT
 from PIL import Image
+import io
 
 app = Flask(__name__)
 CORS(app)
 
 # --- CONFIGURATION ---
-# Get keys from Environment Variables (set these in Render)
 api_key = os.getenv("GEMINI_API_KEY") 
-db_url = os.getenv("DATABASE_URL") 
+db_url = os.getenv("DATABASE_URL")
 
-genai.configure(api_key=api_key)
+# Fix for Render Database URL
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-generation_config = {
-    "temperature": 0.7,
-    "max_output_tokens": 4096,
-}
+# NEW CLIENT SETUP
+client = genai.Client(api_key=api_key)
+
 system_instruction = """
 You are 'OSINT-MIND', a cyber-intelligence analyst. 
 Format your responses using Markdown. Be concise, technical, and precise.
-If an image is provided, analyze it for OSINT clues (metadata, landmarks, text).
+If an image is provided, analyze it for OSINT clues.
 """
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    generation_config=generation_config,
-    system_instruction=system_instruction,
-)
 
 # --- DATABASE CONNECTION ---
 def get_db_connection():
-    conn = psycopg2.connect(db_url)
-    return conn
+    try:
+        conn = psycopg2.connect(db_url)
+        return conn
+    except Exception as e:
+        print(f"DB Connection Error: {e}")
+        return None
 
 def init_db():
     conn = get_db_connection()
+    if not conn: return
     c = conn.cursor()
-    # PostgreSQL syntax: SERIAL is used for auto-increment
     c.execute('''CREATE TABLE IF NOT EXISTS sessions 
                  (id SERIAL PRIMARY KEY, title TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS messages 
@@ -48,16 +49,12 @@ def init_db():
     c.close()
     conn.close()
 
-# Initialize DB on startup (safely)
-try:
-    init_db()
-except Exception as e:
-    print(f"DB Init Error (Ignore if running locally without DB setup): {e}")
+# Initialize DB
+init_db()
 
 # --- HELPER FUNCTIONS ---
 def process_image(image_file):
-    img = Image.open(image_file)
-    return img
+    return Image.open(image_file)
 
 # --- ROUTES ---
 
@@ -68,19 +65,17 @@ def home():
 @app.route('/sessions', methods=['GET', 'POST'])
 def handle_sessions():
     conn = get_db_connection()
+    if not conn: return jsonify({"error": "Database error"}), 500
     c = conn.cursor()
     
     if request.method == 'POST':
-        # Create new session
         c.execute("INSERT INTO sessions (title) VALUES (%s) RETURNING id", ("New Investigation",))
         session_id = c.fetchone()[0]
         conn.commit()
         c.close()
         conn.close()
         return jsonify({"id": session_id, "title": "New Investigation"})
-    
     else:
-        # Get all sessions
         c.execute("SELECT * FROM sessions ORDER BY id DESC")
         sessions = [{"id": row[0], "title": row[1]} for row in c.fetchall()]
         c.close()
@@ -90,6 +85,7 @@ def handle_sessions():
 @app.route('/history/<int:session_id>', methods=['GET'])
 def get_history(session_id):
     conn = get_db_connection()
+    if not conn: return jsonify([])
     c = conn.cursor()
     c.execute("SELECT sender, content FROM messages WHERE session_id = %s ORDER BY id ASC", (session_id,))
     messages = [{"sender": row[0], "content": row[1]} for row in c.fetchall()]
@@ -103,45 +99,43 @@ def chat():
     user_text = request.form.get('message')
     image_file = request.files.get('image')
 
-    gemini_input = [user_text]
+    # NEW: Prepare content for the new SDK
+    contents = [user_text]
     has_image = False
     
     if image_file:
         img = process_image(image_file)
-        gemini_input.append(img)
+        contents.append(img)
         has_image = True
 
     try:
-        response = model.generate_content(gemini_input)
+        # NEW: Generate content call
+        response = client.models.generate_content(
+            model="gemini-2.0-flash", # Using the newer, faster model
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.7
+            )
+        )
         ai_reply = response.text
 
+        # Save to DB
         conn = get_db_connection()
-        c = conn.cursor()
-        
-        # Save User Message (Use %s for Postgres)
-        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
-                  (session_id, "user", user_text, has_image))
-        
-        # Save AI Message
-        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
-                  (session_id, "bot", ai_reply, False))
-        
-        # Update Title Logic
-        c.execute("SELECT count(*) FROM messages WHERE session_id = %s", (session_id,))
-        count = c.fetchone()[0]
-        if count <= 2:
-            title_prompt = f"Summarize this into a 3-word title: {user_text}"
-            title_resp = model.generate_content(title_prompt)
-            clean_title = title_resp.text.strip().replace('"','')
-            c.execute("UPDATE sessions SET title = %s WHERE id = %s", (clean_title, session_id))
-
-        conn.commit()
-        c.close()
-        conn.close()
+        if conn:
+            c = conn.cursor()
+            c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
+                      (session_id, "user", user_text, has_image))
+            c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
+                      (session_id, "bot", ai_reply, False))
+            conn.commit()
+            c.close()
+            conn.close()
 
         return jsonify({"reply": ai_reply})
 
     except Exception as e:
+        print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
