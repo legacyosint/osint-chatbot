@@ -507,24 +507,35 @@
         document.getElementById('sidebar-delete-btn').onclick = () => deleteSessionById(sessionId);
     }
 
-    async function createNewSession(initialMessage = null) {
-        // If we are already on the welcome screen and didn't pass an initial message, just focus input
-        if(!currentSessionId && !initialMessage) {
+    // UPDATED: Added forceCreate parameter to bypass the check
+    async function createNewSession(initialMessage = null, forceCreate = false) {
+        
+        // Guard: If on welcome screen, no prompt, and NOT forced -> do nothing.
+        // This prevents empty chats when clicking "+ New Chat" repeatedly.
+        if(!currentSessionId && !initialMessage && !forceCreate) {
              document.getElementById('user-input').focus();
              return;
         }
 
-        const res = await fetch(`${API_URL}/sessions`, { method: 'POST' });
-        const data = await res.json();
-        currentSessionId = data.id;
-        document.getElementById('chat-container').innerHTML = '';
-        showWelcomeScreen(false);
-        await loadSessions();
-        document.getElementById('current-chat-name').innerText = data.title;
+        try {
+            const res = await fetch(`${API_URL}/sessions`, { method: 'POST' });
+            const data = await res.json();
+            
+            currentSessionId = data.id;
+            
+            // UI Updates
+            document.getElementById('current-chat-name').innerText = data.title;
+            document.getElementById('chat-container').innerHTML = '';
+            showWelcomeScreen(false); // Hide the "Welcome Hacker" text
+            await loadSessions(); // Refresh sidebar
 
-        if(initialMessage) {
-            document.getElementById('user-input').value = initialMessage;
-            sendMessage();
+            // If triggered by a Bubble, send the prompt immediately
+            if(initialMessage) {
+                document.getElementById('user-input').value = initialMessage;
+                sendMessage();
+            }
+        } catch (e) {
+            console.error("Failed to create session:", e);
         }
     }
 
@@ -562,14 +573,14 @@
 
         if (!message && !file) return;
 
-        // If no session exists, create one first, then send
+        // UPDATED: If no session exists, FORCE create one immediately
         if (!currentSessionId) {
-             await createNewSession();
+             await createNewSession(null, true);
         }
 
         // UI Updates
         input.value = '';
-        input.style.height = 'auto'; // Reset height
+        input.style.height = 'auto'; 
         clearFile();
         checkInputState();
         
@@ -585,16 +596,17 @@
 
         try {
             const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
-            if(res.status === 429) throw new Error("Rate limit exceeded. Please check billing.");
+            
+            if(res.status === 429) throw new Error("Rate limit exceeded. Check billing.");
             if(!res.ok) throw new Error("Server connection failed.");
             
             const data = await res.json();
             removeLoadingMessage(loadingId);
             appendMessage('bot', data.reply);
-            loadSessions(); // Refresh titles in sidebar
+            loadSessions(); // Update sidebar title
         } catch (e) {
             removeLoadingMessage(loadingId);
-            appendMessage('bot', `**Error:** ${e.message}. Try again later.`);
+            appendMessage('bot', `**Error:** ${e.message}`);
         }
         scrollToBottom();
     }
