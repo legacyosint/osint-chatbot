@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>OSINT // ANALYZER</title>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -48,7 +48,12 @@
         }
 
         /* --- GLOBAL --- */
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg-app); color: var(--text-primary); height: 100vh; overflow: hidden; }
+        body { 
+            margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg-app); color: var(--text-primary); 
+            height: 100dvh; /* Dynamic Height for Mobile Browsers */
+            overflow: hidden; 
+        }
         .material-symbols-outlined { font-size: 20px; }
         .icon-sm { font-size: 18px; }
 
@@ -92,7 +97,11 @@
         .settings-item.danger { color: #ff453a; }
 
         /* --- MAIN CONTENT --- */
-        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; width: 100%; }
+        #main-content { 
+            flex: 1; display: flex; flex-direction: column; 
+            background: var(--bg-chat); position: relative; width: 100%; 
+            height: 100%; /* Ensure full height */
+        }
         
         .mobile-header {
             display: none; height: 50px; align-items: center; justify-content: space-between; 
@@ -105,7 +114,12 @@
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
         .user-name-display { font-size: 0.9rem; font-weight: 600; padding-right: 5px; }
 
-        #chat-scroll-area { flex: 1; overflow-y: auto; padding-top: 70px; padding-bottom: 20px; }
+        #chat-scroll-area { 
+            flex: 1; overflow-y: auto; 
+            padding-top: 70px; 
+            /* Padding bottom ensures text doesn't hide behind input */
+            padding-bottom: 10px; 
+        }
         .message-container { max-width: 800px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; }
 
         .message { margin-bottom: 25px; display: flex; flex-direction: column; max-width: 85%; position: relative; }
@@ -126,60 +140,55 @@
 
         /* --- INPUT AREA --- */
         .input-footer { 
-            padding: 20px; 
-            padding-bottom: calc(20px + env(safe-area-inset-bottom)); /* iOS Safe Area */
-            display: flex; justify-content: center; background: var(--bg-app);
+            padding: 10px 15px; 
+            background: var(--bg-app);
+            display: flex; justify-content: center;
+            /* Sticky footer ensures it stays visible */
+            position: relative; 
+            z-index: 20;
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            border-top: 1px solid var(--border-color); /* Separator */
         }
-        .input-box-wrapper { width: 100%; max-width: 800px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 24px; padding: 10px 20px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s; }
-        .input-row { display: flex; align-items: flex-end; gap: 10px; width: 100%; }
+        
+        .input-box-wrapper { 
+            width: 100%; max-width: 800px; background: var(--bg-input); 
+            border: 1px solid var(--border-color); border-radius: 24px; 
+            padding: 8px 15px; display: flex; flex-direction: column; 
+            gap: 8px; transition: border-color 0.2s; 
+        }
+        .input-row { display: flex; align-items: center; gap: 10px; width: 100%; }
         
         textarea { 
             flex: 1; background: transparent; border: none; color: var(--text-primary); 
-            resize: none; max-height: 150px; min-height: 24px; 
+            resize: none; max-height: 120px; min-height: 24px; 
             font-size: 1rem; outline: none; padding: 4px 0;
+            line-height: 1.4;
         }
         
         /* DYNAMIC SEND BUTTON */
         .send-btn { 
             background: var(--accent-color); color: #000; border: none; 
-            width: 36px; height: 36px; border-radius: 50%; 
+            width: 34px; height: 34px; border-radius: 50%; 
             cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0;
         }
-        .send-btn:hover:not(:disabled) { transform: scale(1.1); box-shadow: 0 0 10px var(--accent-color); }
+        .send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 0 8px var(--accent-color); }
         .send-btn:disabled { background: var(--border-color); cursor: default; opacity: 0.5; transform: none; box-shadow: none;}
-        .send-btn .material-symbols-outlined { font-size: 20px; margin-left: 2px; /* Visual center */ }
+        .send-btn .material-symbols-outlined { font-size: 18px; margin-left: 2px; }
 
-        #image-preview-container { display: none; width: 60px; height: 60px; position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); animation: fadeIn 0.3s; }
+        #image-preview-container { display: none; width: 60px; height: 60px; position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); animation: fadeIn 0.3s; margin-bottom: 5px;}
         .preview-thumb { width: 100%; height: 100%; object-fit: cover; }
         .remove-file-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
         /* --- WELCOME SCREEN --- */
         #welcome-screen { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            text-align: center; display: none; width: 100%; max-width: 600px;
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); 
+            text-align: center; display: none; width: 90%; max-width: 600px;
         }
-        
-        .welcome-title { 
-            font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; 
-            opacity: 0; animation: slideUp 0.6s forwards;
-        }
-        
-        .welcome-subtext {
-            color: var(--text-secondary); margin-bottom: 30px;
-            opacity: 0; animation: slideUp 0.6s 0.2s forwards;
-        }
-
-        .bubble-grid { 
-            display: flex; gap: 10px; justify-content: center; margin-top: 30px; 
-            opacity: 0; animation: fadeIn 0.8s 0.4s forwards;
-        }
-        
-        .suggestion-chip { 
-            background: var(--bg-input); border: 1px solid var(--border-color); 
-            padding: 10px 20px; border-radius: 20px; cursor: pointer; 
-            font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; gap: 8px;
-        }
+        .welcome-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; opacity: 0; animation: slideUp 0.6s forwards; }
+        .welcome-subtext { color: var(--text-secondary); margin-bottom: 30px; opacity: 0; animation: slideUp 0.6s 0.2s forwards; }
+        .bubble-grid { display: flex; gap: 10px; justify-content: center; margin-top: 30px; opacity: 0; animation: fadeIn 0.8s 0.4s forwards; }
+        .suggestion-chip { background: var(--bg-input); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .suggestion-chip:hover { border-color: var(--accent-color); background: var(--bg-hover); }
 
         /* Mobile Adjustments */
@@ -195,15 +204,15 @@
             
             #chat-scroll-area { padding-top: 60px; }
             .message-container { padding: 0 15px; }
-            .input-footer { padding: 15px; } /* More padding for touch targets */
+            
+            /* Input Area Mobile Tweaks */
+            .input-footer { padding: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
             textarea { font-size: 16px; } /* Prevent iOS zoom */
             
             .action-row { opacity: 1; }
-            
-            /* Welcome Mobile */
-            #welcome-screen { width: 90%; top: 45%; }
+            #welcome-screen { top: 45%; }
             .welcome-title { font-size: 1.8rem; }
-            .bubble-grid { flex-direction: column; align-items: center; gap: 15px;}
+            .bubble-grid { flex-direction: column; align-items: center; gap: 12px;}
             .suggestion-chip { width: 100%; justify-content: center; box-sizing: border-box; }
         }
 
@@ -316,7 +325,7 @@
                     </div>
                     <div class="input-row">
                         <input type="file" id="image-upload" style="display:none" onchange="handleFileSelect()">
-                        <label for="image-upload" style="cursor:pointer; color:var(--text-secondary); padding-bottom:5px;">
+                        <label for="image-upload" style="cursor:pointer; color:var(--text-secondary); padding: 5px;">
                             <span class="material-symbols-outlined">attach_file</span>
                         </label>
                         <textarea id="user-input" rows="1" placeholder="Enter target data..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="handleEnter(event)"></textarea>
