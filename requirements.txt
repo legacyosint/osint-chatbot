@@ -4,3 +4,4 @@ google-generativeai
 pillow
 python-dotenv
 gunicorn
+psycopg2-binary
