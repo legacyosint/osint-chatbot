@@ -445,13 +445,19 @@
 
     function closeAllDropdowns(targetClicked) {
         document.querySelectorAll('.dropdown-menu').forEach(menu => {
-            // Don't close if we just clicked the trigger for this menu
-            if (targetClicked && menu.parentElement.contains(targetClicked)) return;
+            // FIXED: Removed the parentElement check so context menus close properly
             menu.classList.remove('show');
-            menu.style.top = null; menu.style.left = null; menu.style.position = null; // Reset context menu styles
+            
+            // Reset positioning specifically for the context menu
+            if(menu.id === 'sidebar-context-menu') {
+                menu.style.top = null;
+                menu.style.left = null;
+                menu.style.position = null;
+            }
         });
-         // Also remove active state from sidebar dots
-         document.querySelectorAll('.item-options-btn').forEach(btn => btn.classList.remove('active'));
+        
+        // Remove active state from the 3-dot buttons
+        document.querySelectorAll('.item-options-btn').forEach(btn => btn.classList.remove('active'));
     }
 
 
