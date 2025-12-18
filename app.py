@@ -1,7 +1,5 @@
 import os
-import sqlite3
-import base64
-import io
+import psycopg2
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import google.generativeai as genai
@@ -11,10 +9,12 @@ app = Flask(__name__)
 CORS(app)
 
 # --- CONFIGURATION ---
+# Get keys from Environment Variables (set these in Render)
 api_key = os.getenv("GEMINI_API_KEY") 
+db_url = os.getenv("DATABASE_URL") 
+
 genai.configure(api_key=api_key)
 
-# Safety & System Instructions
 generation_config = {
     "temperature": 0.7,
     "max_output_tokens": 4096,
@@ -30,40 +30,52 @@ model = genai.GenerativeModel(
     system_instruction=system_instruction,
 )
 
-# --- DATABASE SETUP ---
+# --- DATABASE CONNECTION ---
+def get_db_connection():
+    conn = psycopg2.connect(db_url)
+    return conn
+
 def init_db():
-    conn = sqlite3.connect('chat_history.db')
+    conn = get_db_connection()
     c = conn.cursor()
-    # Create table for sessions
+    # PostgreSQL syntax: SERIAL is used for auto-increment
     c.execute('''CREATE TABLE IF NOT EXISTS sessions 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT)''')
-    # Create table for messages
+                 (id SERIAL PRIMARY KEY, title TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS messages 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER, 
+                 (id SERIAL PRIMARY KEY, session_id INTEGER, 
                   sender TEXT, content TEXT, has_image BOOLEAN)''')
     conn.commit()
+    c.close()
     conn.close()
 
-init_db()
+# Initialize DB on startup (safely)
+try:
+    init_db()
+except Exception as e:
+    print(f"DB Init Error (Ignore if running locally without DB setup): {e}")
 
 # --- HELPER FUNCTIONS ---
 def process_image(image_file):
-    """Converts uploaded file to format Gemini accepts"""
     img = Image.open(image_file)
     return img
 
 # --- ROUTES ---
 
+@app.route('/')
+def home():
+    return render_template('index.html')
+
 @app.route('/sessions', methods=['GET', 'POST'])
 def handle_sessions():
-    conn = sqlite3.connect('chat_history.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     if request.method == 'POST':
         # Create new session
-        c.execute("INSERT INTO sessions (title) VALUES (?)", ("New Investigation",))
-        session_id = c.lastrowid
+        c.execute("INSERT INTO sessions (title) VALUES (%s) RETURNING id", ("New Investigation",))
+        session_id = c.fetchone()[0]
         conn.commit()
+        c.close()
         conn.close()
         return jsonify({"id": session_id, "title": "New Investigation"})
     
@@ -71,29 +83,26 @@ def handle_sessions():
         # Get all sessions
         c.execute("SELECT * FROM sessions ORDER BY id DESC")
         sessions = [{"id": row[0], "title": row[1]} for row in c.fetchall()]
+        c.close()
         conn.close()
         return jsonify(sessions)
 
 @app.route('/history/<int:session_id>', methods=['GET'])
 def get_history(session_id):
-    conn = sqlite3.connect('chat_history.db')
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT sender, content FROM messages WHERE session_id = ?", (session_id,))
+    c.execute("SELECT sender, content FROM messages WHERE session_id = %s ORDER BY id ASC", (session_id,))
     messages = [{"sender": row[0], "content": row[1]} for row in c.fetchall()]
+    c.close()
     conn.close()
     return jsonify(messages)
-    
-@app.route('/')
-def home():
-    return render_template('index.html')
-    
+
 @app.route('/chat', methods=['POST'])
 def chat():
     session_id = request.form.get('session_id')
     user_text = request.form.get('message')
     image_file = request.files.get('image')
 
-    # Prepare input for Gemini
     gemini_input = [user_text]
     has_image = False
     
@@ -103,33 +112,31 @@ def chat():
         has_image = True
 
     try:
-        # Generate AI Response
         response = model.generate_content(gemini_input)
         ai_reply = response.text
 
-        # Save to DB
-        conn = sqlite3.connect('chat_history.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
-        # Save User Message
-        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (?, ?, ?, ?)",
+        # Save User Message (Use %s for Postgres)
+        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
                   (session_id, "user", user_text, has_image))
         
         # Save AI Message
-        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (?, ?, ?, ?)",
+        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
                   (session_id, "bot", ai_reply, False))
         
-        # Update Session Title if it's the first message
-        c.execute("SELECT count(*) FROM messages WHERE session_id = ?", (session_id,))
+        # Update Title Logic
+        c.execute("SELECT count(*) FROM messages WHERE session_id = %s", (session_id,))
         count = c.fetchone()[0]
         if count <= 2:
-            # Generate a short title based on the query
             title_prompt = f"Summarize this into a 3-word title: {user_text}"
             title_resp = model.generate_content(title_prompt)
             clean_title = title_resp.text.strip().replace('"','')
-            c.execute("UPDATE sessions SET title = ? WHERE id = ?", (clean_title, session_id))
+            c.execute("UPDATE sessions SET title = %s WHERE id = %s", (clean_title, session_id))
 
         conn.commit()
+        c.close()
         conn.close()
 
         return jsonify({"reply": ai_reply})
