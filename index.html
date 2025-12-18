@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSINT // ANALYZER</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* --- CYBER MINIMALIST THEME --- */
+        :root {
+            --bg-color: #0a0a0a;
+            --sidebar-bg: #111111;
+            --chat-bg: #0a0a0a;
+            --accent: #00f3ff; /* Cyan Cyberpunk */
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            --border: #333;
+            --user-msg-bg: #1a1a1a;
+            --bot-msg-bg: #0a0a0a;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace; /* Terminal vibe */
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR */
+        #sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .new-chat-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: var(--text-dim);
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-item:hover { background: #222; color: var(--text-main); }
+        .history-item.active { background: #222; color: var(--accent); border-left: 2px solid var(--accent); }
+
+        /* MAIN CHAT AREA */
+        #main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--chat-bg);
+            position: relative;
+        }
+
+        #chat-window {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .message-header { font-size: 0.8em; color: var(--text-dim); margin-bottom: 5px; }
+        .user .message-header { color: var(--accent); }
+        
+        .message-content {
+            padding: 15px;
+            border-radius: 5px;
+            background: var(--bot-msg-bg);
+            border: 1px solid #222;
+        }
+
+        .user .message-content {
+            background: var(--user-msg-bg);
+            border: 1px solid #333;
+        }
+
+        /* INPUT AREA */
+        #input-area {
+            padding: 20px;
+            background: var(--sidebar-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .input-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            gap: 10px;
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            resize: none;
+            font-family: inherit;
+            outline: none;
+            height: 24px;
+            max-height: 100px;
+        }
+
+        /* Custom File Upload Button */
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            cursor: pointer;
+            color: var(--text-dim);
+        }
+        
+        .file-upload:hover { color: var(--text-main); }
+        .file-upload input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer; 
+        }
+
+        .send-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* UTILS */
+        .preview-img { max-width: 200px; margin-top: 10px; border: 1px solid var(--accent); display: none;}
+        
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* LOADING ANIMATION */
+        .typing { color: var(--accent); font-size: 0.8em; animation: blink 1s infinite; display: none;}
+        @keyframes blink { 50% { opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <button class="new-chat-btn" onclick="createNewSession()">+ NEW INVESTIGATION</button>
+        <div class="history-list" id="history-list">
+            </div>
+    </div>
+
+    <div id="main-chat">
+        <div id="chat-window">
+            </div>
+
+        <div id="input-area">
+            <div class="input-container">
+                <div class="file-upload">
+                    <span>📎</span>
+                    <input type="file" id="image-upload" accept="image/*" onchange="previewImage()">
+                </div>
+                <textarea id="user-input" placeholder="Enter OSINT query..." onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"></textarea>
+                <button class="send-btn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+        <div style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);">
+            <img id="img-preview" class="preview-img">
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        const API_URL = 'http://localhost:5000'; // Change if deployed
+
+        // On Load: Get Sessions
+        window.onload = async () => {
+            await loadSessions();
+            if(!currentSessionId) createNewSession();
+        };
+
+        async function loadSessions() {
+            const res = await fetch(`${API_URL}/sessions`);
+            const sessions = await res.json();
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            sessions.forEach(s => {
+                const item = document.createElement('div');
+                item.className = `history-item ${s.id === currentSessionId ? 'active' : ''}`;
+                item.innerText = s.title;
+                item.onclick = () => loadChat(s.id);
+                list.appendChild(item);
+            });
+        }
+
+        async function createNewSession() {
+            const res = await fetch(`${API_URL}/sessions`, { method: 'POST' });
+            const data = await res.json();
+            currentSessionId = data.id;
+            document.getElementById('chat-window').innerHTML = '';
+            loadSessions();
+        }
+
+        async function loadChat(id) {
+            currentSessionId = id;
+            loadSessions(); // To update active state
+            const res = await fetch(`${API_URL}/history/${id}`);
+            const messages = await res.json();
+            
+            const window = document.getElementById('chat-window');
+            window.innerHTML = '';
+            
+            messages.forEach(msg => {
+                appendMessage(msg.sender, msg.content);
+            });
+        }
+
+        function previewImage() {
+            const file = document.getElementById('image-upload').files[0];
+            const preview = document.getElementById('img-preview');
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            }
+        }
+
+        async function sendMessage() {
+            const textInput = document.getElementById('user-input');
+            const fileInput = document.getElementById('image-upload');
+            const message = textInput.value;
+            const file = fileInput.files[0];
+
+            if (!message && !file) return;
+
+            // Clear inputs
+            textInput.value = '';
+            document.getElementById('img-preview').style.display = 'none';
+            fileInput.value = ''; // clear file input
+
+            // Append User Message
+            appendMessage('user', message + (file ? ' [Image Uploaded]' : ''));
+
+            // Show Loading
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot';
+            loadingDiv.innerHTML = `<div class="message-header">OSINT-MIND</div><div class="message-content typing">Analyzing...</div>`;
+            document.getElementById('chat-window').appendChild(loadingDiv);
+
+            // Prepare Data
+            const formData = new FormData();
+            formData.append('session_id', currentSessionId);
+            formData.append('message', message);
+            if (file) formData.append('image', file);
+
+            try {
+                const res = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                loadingDiv.remove(); // Remove loading
+                appendMessage('bot', data.reply);
+                loadSessions(); // Refresh sidebar titles
+            } catch (e) {
+                loadingDiv.innerHTML = "Error connecting to server.";
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const window = document.getElementById('chat-window');
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            
+            const header = sender === 'user' ? 'YOU' : 'OSINT-MIND';
+            // Parse Markdown for bot, plain text for user
+            const content = sender === 'bot' ? marked.parse(text) : text;
+            
+            div.innerHTML = `
+                <div class="message-header">${header}</div>
+                <div class="message-content">${content}</div>
+            `;
+            window.appendChild(div);
+            window.scrollTop = window.scrollHeight;
+        }
+    </script>
+</body>
+</html>
