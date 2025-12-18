@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OSINT // ANALYZER</title>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -52,106 +52,123 @@
         .material-symbols-outlined { font-size: 20px; }
         .icon-sm { font-size: 18px; }
 
-        .app-container { display: flex; width: 100%; height: 100%; }
+        .app-container { display: flex; width: 100%; height: 100%; position: relative; }
 
         /* --- SIDEBAR --- */
-        #sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; transition: 0.3s; }
-        #sidebar.collapsed { width: 60px; }
-        #sidebar.collapsed .hide-on-collapse { display: none; }
+        #sidebar { 
+            width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); 
+            display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease, width 0.3s ease; 
+            z-index: 100;
+        }
+        #sidebar.collapsed { width: 0px; border: none; overflow: hidden;}
         
         .sidebar-header { padding: 20px; display: flex; align-items: center; justify-content: space-between; height: 60px; box-sizing: border-box;}
         .brand-text { font-weight: 800; font-family: monospace; letter-spacing: 1px; color: var(--accent-color); }
         .sidebar-btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; border-radius: 50%; }
-        .sidebar-btn-icon:hover { background: var(--bg-hover); color: var(--text-primary); }
+        
+        /* Mobile Overlay Background */
+        #mobile-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.5); z-index: 90; display: none;
+        }
 
         .new-chat-btn-container { padding: 0 15px 10px; }
         .new-chat-btn { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; }
-        .new-chat-btn:hover { border-color: var(--accent-color); background: var(--bg-hover); }
-
+        
         #history-list { flex: 1; overflow-y: auto; padding: 10px 0; }
-        .chat-item { padding: 10px 20px; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-primary); font-size: 0.9rem; text-decoration: none; position: relative; }
+        .chat-item { padding: 10px 20px; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-primary); font-size: 0.9rem; text-decoration: none; position: relative; white-space: nowrap; overflow: hidden; }
         .chat-item:hover, .chat-item.active { background: var(--bg-hover); }
         .item-options-btn { opacity: 0; margin-left: auto; color: var(--text-secondary); transition: 0.2s; }
         .chat-item:hover .item-options-btn { opacity: 1; }
 
         .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); position: relative; }
         .settings-trigger { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; border-radius: 8px; color: var(--text-primary); transition: 0.2s; }
-        .settings-trigger:hover { background: var(--bg-hover); }
-
-        #settings-menu { position: absolute; bottom: 70px; left: 10px; width: 240px; background: var(--bg-dropdown); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); padding: 5px; display: none; z-index: 1000; }
+        
+        #settings-menu { position: absolute; bottom: 70px; left: 10px; width: 220px; background: var(--bg-dropdown); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); padding: 5px; display: none; z-index: 1000; }
         .settings-item { padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-radius: 6px; font-size: 0.9rem; color: var(--text-primary); }
-        .settings-item:hover { background: var(--bg-hover); }
         .settings-item.danger { color: #ff453a; }
 
         /* --- MAIN CONTENT --- */
-        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; }
-        .top-nav { height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; position: absolute; top:0; right: 0; width: 100%; box-sizing: border-box; z-index: 10; }
+        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; width: 100%; }
+        
+        /* Mobile Header (Hidden on Desktop) */
+        .mobile-header {
+            display: none; height: 50px; align-items: center; justify-content: space-between; 
+            padding: 0 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-app);
+            position: absolute; top:0; left:0; width: 100%; box-sizing: border-box; z-index: 50;
+        }
 
-        .user-chip { display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 20px; cursor: pointer; transition: 0.2s; background: rgba(0,0,0,0.2); }
-        .user-chip:hover { background: var(--bg-hover); }
+        .top-nav { height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; position: absolute; top:0; right: 0; width: 100%; box-sizing: border-box; z-index: 10; pointer-events: none; }
+        .user-chip { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 20px; cursor: pointer; transition: 0.2s; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); }
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
         .user-name-display { font-size: 0.9rem; font-weight: 600; padding-right: 5px; }
 
         #chat-scroll-area { flex: 1; overflow-y: auto; padding-top: 70px; padding-bottom: 20px; }
         .message-container { max-width: 800px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; }
 
-        /* --- MESSAGE BUBBLES --- */
-        .message { margin-bottom: 25px; display: flex; flex-direction: column; max-width: 85%; position: relative; group; }
-        .message.user { align-self: flex-end; align-items: flex-end; }
-        .message.bot { align-self: flex-start; align-items: flex-start; width: 100%; max-width: 90%; }
+        /* Bubbles */
+        .message { margin-bottom: 25px; display: flex; flex-direction: column; max-width: 85%; position: relative; }
+        .message.user { align-self: flex-end; align-items: flex-end; max-width: 90%; }
+        .message.bot { align-self: flex-start; align-items: flex-start; width: 100%; max-width: 95%; }
         
-        .message-content { padding: 12px 16px; font-size: 1rem; line-height: 1.5; position: relative; word-wrap: break-word; }
-        
+        .message-content { padding: 12px 16px; font-size: 1rem; line-height: 1.5; position: relative; word-wrap: break-word; overflow-wrap: break-word; }
         .message.user .message-content { background: var(--user-bubble-bg); color: var(--user-bubble-text); border-radius: 18px 18px 4px 18px; }
         .message.bot .message-content { background: transparent; border: 1px solid var(--bot-bubble-border); color: var(--text-primary); border-radius: 12px; width: 100%; }
 
-        /* SENT IMAGES STYLE */
         .chat-image { max-width: 100%; border-radius: 12px; margin-bottom: 8px; display: block; border: 1px solid rgba(255,255,255,0.1); }
-        
-        /* ACTION BUTTONS (Copy/Edit) */
-        .action-row {
-            display: flex; gap: 10px; margin-top: 5px; opacity: 0; transition: 0.2s;
-        }
+        .action-row { display: flex; gap: 10px; margin-top: 5px; opacity: 0; transition: 0.2s; }
         .message:hover .action-row { opacity: 1; }
-        
-        .action-btn {
-            cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; font-size: 0.75rem;
-        }
-        .action-btn:hover { color: var(--text-primary); }
-        .action-btn span { font-size: 16px; }
+        .action-btn { cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; font-size: 0.75rem; }
 
-        pre { background: #1e1e1e !important; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; margin-top: 10px;}
+        pre { background: #1e1e1e !important; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; margin-top: 10px; max-width: 100%;}
         code { font-family: 'Consolas', monospace; }
 
         /* Input Area */
         .input-footer { padding: 20px; display: flex; justify-content: center; }
         .input-box-wrapper { width: 100%; max-width: 800px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 24px; padding: 10px 20px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s; }
-        .input-box-wrapper:focus-within { border-color: var(--accent-color); }
         .input-row { display: flex; align-items: flex-end; gap: 10px; width: 100%; }
-        
         textarea { flex: 1; background: transparent; border: none; color: var(--text-primary); resize: none; max-height: 150px; min-height: 24px; font-size: 1rem; outline: none; padding: 4px 0; }
-        .send-btn { background: var(--accent-color); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .send-btn:disabled { background: var(--border-color); cursor: default; }
-
+        
         #image-preview-container { display: none; width: 60px; height: 60px; position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); animation: fadeIn 0.3s; }
         .preview-thumb { width: 100%; height: 100%; object-fit: cover; }
-        .remove-file-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .remove-file-btn:hover { background: rgba(0,0,0,0.8); }
+        .remove-file-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        /* --- MOBILE RESPONSIVE STYLES --- */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: absolute; height: 100%; width: 80%; max-width: 300px; 
+                transform: translateX(-100%); /* Hide by default */
+            }
+            #sidebar.active { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
+            
+            #sidebar.collapsed { width: 80%; max-width: 300px; transform: translateX(-100%); } /* Reset logic for mobile */
+
+            .mobile-header { display: flex; } /* Show header on mobile */
+            .top-nav { top: 50px; justify-content: flex-end; padding: 10px; pointer-events: none;} /* Move user chip down */
+            .user-chip { padding: 4px 8px; pointer-events: auto; }
+            .user-name-display { display: none; } /* Hide name on small screens */
+            
+            #chat-scroll-area { padding-top: 60px; }
+            .message-container { padding: 0 15px; }
+            .input-footer { padding: 10px; }
+            
+            .action-row { opacity: 1; } /* Always show actions on touch */
+            
+            /* Welcome screen adjustments */
+            #welcome-screen { width: 90%; top: 40%; }
+            .welcome-title { font-size: 1.8rem; }
+            .bubble-grid { flex-direction: column; align-items: center; }
+            .suggestion-chip { width: 100%; box-sizing: border-box; text-align: center; }
+        }
 
         /* Overlays */
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .login-btn { padding: 12px 24px; background: #fff; color: #000; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; display: flex; gap: 10px; align-items: center;}
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; }
-        .modal-card { background: var(--bg-dropdown); border: 1px solid var(--border-color); width: 350px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); text-align: center; position: relative; }
+        .modal-card { background: var(--bg-dropdown); border: 1px solid var(--border-color); width: 90%; max-width: 350px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); text-align: center; position: relative; }
         .modal-close { position: absolute; top: 15px; right: 15px; cursor: pointer; color: var(--text-secondary); }
         .profile-large-img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; border: 2px solid var(--accent-color); }
-        
-        #welcome-screen { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; width: 100%; }
-        .welcome-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; }
-        .bubble-grid { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
-        .suggestion-chip { background: var(--bg-input); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
-        .suggestion-chip:hover { border-color: var(--accent-color); }
     </style>
 </head>
 <body>
@@ -176,23 +193,29 @@
         </div>
     </div>
 
+    <div id="mobile-overlay" onclick="toggleSidebar()"></div>
+
     <div class="app-container" id="app-content" style="filter: blur(5px); pointer-events: none;">
+        
         <div id="sidebar">
             <div class="sidebar-header">
-                <span class="brand-text hide-on-collapse">OSINT</span>
-                <button class="sidebar-btn-icon" onclick="toggleSidebar()">
-                    <span class="material-symbols-outlined">menu</span>
+                <span class="brand-text">OSINT</span>
+                <button class="sidebar-btn-icon" onclick="toggleSidebar()" style="display: none; @media(min-width:769px){display:block;}">
+                    <span class="material-symbols-outlined">menu_open</span>
+                </button>
+                <button class="sidebar-btn-icon" onclick="toggleSidebar()" style="display: block; @media(min-width:769px){display:none;}">
+                    <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="new-chat-btn-container hide-on-collapse">
-                <button class="new-chat-btn" onclick="createNewSession()">
+            <div class="new-chat-btn-container">
+                <button class="new-chat-btn" onclick="createNewSession(); if(window.innerWidth<=768) toggleSidebar();">
                     <span class="material-symbols-outlined">add</span> New Chat
                 </button>
             </div>
             <div id="history-list"></div>
             <div class="sidebar-footer">
                 <div class="settings-trigger" onclick="toggleSettingsMenu()">
-                    <span class="material-symbols-outlined">settings</span> <span class="hide-on-collapse">Settings</span>
+                    <span class="material-symbols-outlined">settings</span> <span>Settings</span>
                 </div>
                 <div id="settings-menu">
                     <div class="settings-item" onclick="toggleTheme()"><span class="material-symbols-outlined">contrast</span> Theme</div>
@@ -205,6 +228,13 @@
         </div>
 
         <div id="main-content">
+            <div class="mobile-header">
+                <button class="sidebar-btn-icon" onclick="toggleSidebar()">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <span class="brand-text" style="font-size: 1rem;">OSINT</span>
+                <div style="width: 24px;"></div> </div>
+
             <div class="top-nav">
                 <div class="user-chip" onclick="openProfile()">
                     <span class="user-name-display" id="header-name">Agent</span>
@@ -319,13 +349,8 @@
     }
 
     // UTILS
-    function copyText(text) {
-        navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
-    }
-    function editText(text) {
-        document.getElementById('user-input').value = text;
-        document.getElementById('user-input').focus();
-    }
+    function copyText(text) { navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!")); }
+    function editText(text) { document.getElementById('user-input').value = text; document.getElementById('user-input').focus(); }
 
     // CHAT RENDERING
     function appendMessage(sender, text, imageData = null) {
@@ -333,23 +358,15 @@
         div.className = `message ${sender}`;
         
         let contentHtml = '';
-        if (imageData) {
-            contentHtml += `<img src="data:image/jpeg;base64,${imageData}" class="chat-image">`;
-        }
-        
+        if (imageData) { contentHtml += `<img src="data:image/jpeg;base64,${imageData}" class="chat-image">`; }
         contentHtml += sender === 'bot' ? marked.parse(text) : text.replace(/\n/g, '<br>');
         
-        // Add Action Buttons (Copy/Edit)
         let actionsHtml = `<div class="action-row">
             <div class="action-btn" onclick="copyText(\`${text.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">content_copy</span> Copy</div>`;
-        
-        if (sender === 'user') {
-            actionsHtml += `<div class="action-btn" onclick="editText(\`${text.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">edit</span> Edit</div>`;
-        }
+        if (sender === 'user') { actionsHtml += `<div class="action-btn" onclick="editText(\`${text.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">edit</span> Edit</div>`; }
         actionsHtml += `</div>`;
 
         div.innerHTML = `<div class="message-content">${contentHtml}</div>${actionsHtml}`;
-        
         document.getElementById('chat-container').appendChild(div);
         div.querySelectorAll('pre code').forEach(hljs.highlightElement);
         document.getElementById('chat-scroll-area').scrollTop = document.getElementById('chat-scroll-area').scrollHeight;
@@ -362,9 +379,13 @@
         const data = await res.json();
         const container = document.getElementById('chat-container');
         container.innerHTML = '';
-        // Updated to pass image data
         data.messages.forEach(m => appendMessage(m.sender, m.content, m.image));
         loadSessions();
+        // Close sidebar on mobile after selecting
+        if(window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('mobile-overlay').style.display = 'none';
+        }
     }
 
     async function sendMessage() {
@@ -379,16 +400,13 @@
         // Optimistic Render
         let previewBase64 = null;
         if(file) {
-            // Need to read file to render it instantly before server responds
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async () => {
-                 previewBase64 = reader.result.split(',')[1]; // Strip header
-                 appendMessage('user', text, previewBase64); // Render instantly
+                 previewBase64 = reader.result.split(',')[1];
+                 appendMessage('user', text, previewBase64);
             }
-        } else {
-             appendMessage('user', text);
-        }
+        } else { appendMessage('user', text); }
 
         input.value = '';
         clearFile();
@@ -412,7 +430,6 @@
         }
     }
 
-    // OTHER BOILERPLATE (Session loading, UI toggles, same as before)
     async function loadSessions() {
         const res = await fetch(`${API_URL}/sessions`);
         const sessions = await res.json();
@@ -449,7 +466,22 @@
     }
 
     function toggleWelcome(show) { document.getElementById('welcome-screen').style.display = show ? 'block' : 'none'; document.getElementById('chat-container').style.display = show ? 'none' : 'flex'; if(show) currentSessionId = null; }
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+    
+    // --- RESPONSIVE SIDEBAR TOGGLE ---
+    function toggleSidebar() { 
+        const sb = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        
+        if (window.innerWidth <= 768) {
+            // Mobile: Slide In/Out
+            sb.classList.toggle('active');
+            overlay.style.display = sb.classList.contains('active') ? 'block' : 'none';
+        } else {
+            // Desktop: Collapse/Expand
+            sb.classList.toggle('collapsed');
+        }
+    }
+
     function toggleSettingsMenu() { const menu = document.getElementById('settings-menu'); menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; }
     function toggleTheme() { const html = document.documentElement; const current = html.getAttribute('data-theme'); const next = current === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', next); localStorage.setItem('theme', next); }
     function openProfile() { document.getElementById('profile-modal').style.display = 'flex'; }
