@@ -1,6 +1,7 @@
 import os
 import json
 import psycopg2
+import base64
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from google import genai
@@ -68,9 +69,9 @@ def init_db():
                  (id SERIAL PRIMARY KEY, user_id TEXT, title TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     c.execute('''CREATE TABLE IF NOT EXISTS messages 
                  (id SERIAL PRIMARY KEY, session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, 
-                  sender TEXT, content TEXT, has_image BOOLEAN, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+                  sender TEXT, content TEXT, has_image BOOLEAN, image_data TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     
-    # Simple migration to ensure user_id exists
+    # --- MIGRATIONS (Auto-fix old tables) ---
     try:
         c.execute("SELECT user_id FROM sessions LIMIT 1")
     except:
@@ -78,6 +79,14 @@ def init_db():
         c.execute("ALTER TABLE sessions ADD COLUMN user_id TEXT")
         conn.commit()
     
+    try:
+        c.execute("SELECT image_data FROM messages LIMIT 1")
+    except:
+        conn.rollback()
+        print("Migrating DB: Adding image_data column...")
+        c.execute("ALTER TABLE messages ADD COLUMN image_data TEXT")
+        conn.commit()
+
     conn.commit()
     c.close()
     conn.close()
@@ -102,15 +111,14 @@ def handle_sessions():
         c.execute("INSERT INTO sessions (user_id, title) VALUES (%s, %s) RETURNING id, title", (user_id, "New Investigation"))
         new_session = c.fetchone()
         conn.commit()
-        c.close()
-        conn.close()
-        return jsonify({"id": new_session[0], "title": new_session[1]})
     else:
         c.execute("SELECT id, title FROM sessions WHERE user_id = %s ORDER BY id DESC", (user_id,))
         sessions = [{"id": row[0], "title": row[1]} for row in c.fetchall()]
-        c.close()
-        conn.close()
         return jsonify(sessions)
+    
+    c.close()
+    conn.close()
+    return jsonify({"id": new_session[0], "title": new_session[1]})
 
 @app.route('/sessions/<int:session_id>', methods=['PUT', 'DELETE'])
 def manage_session(session_id):
@@ -120,19 +128,17 @@ def manage_session(session_id):
     conn = get_db_connection()
     c = conn.cursor()
     
-    # Check ownership
     c.execute("SELECT id FROM sessions WHERE id = %s AND user_id = %s", (session_id, user_id))
     if not c.fetchone():
         return jsonify({"error": "Access denied"}), 404
 
     if request.method == 'DELETE':
         c.execute("DELETE FROM sessions WHERE id = %s", (session_id,))
-        conn.commit()
     elif request.method == 'PUT':
         new_title = request.json.get('title')
         c.execute("UPDATE sessions SET title = %s WHERE id = %s", (new_title, session_id))
-        conn.commit()
         
+    conn.commit()
     c.close()
     conn.close()
     return jsonify({"status": "success"})
@@ -147,52 +153,52 @@ def get_history(session_id):
     
     c.execute("SELECT title FROM sessions WHERE id = %s AND user_id = %s", (session_id, user_id))
     row = c.fetchone()
-    if not row:
-        return jsonify({"error": "Access denied"}), 403
+    if not row: return jsonify({"error": "Access denied"}), 403
     
     title = row[0]
-    c.execute("SELECT sender, content FROM messages WHERE session_id = %s ORDER BY id ASC", (session_id,))
-    messages = [{"sender": row[0], "content": row[1]} for row in c.fetchall()]
+    # UPDATED: Now selecting image_data as well
+    c.execute("SELECT sender, content, image_data FROM messages WHERE session_id = %s ORDER BY id ASC", (session_id,))
+    messages = [{"sender": row[0], "content": row[1], "image": row[2]} for row in c.fetchall()]
+    
     c.close()
     conn.close()
     return jsonify({"title": title, "messages": messages})
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    # 1. Verify User
     user_id = verify_user(request)
     if not user_id: return jsonify({"error": "Unauthorized"}), 401
 
-    # 2. Get Data
     session_id = request.form.get('session_id')
     user_text = request.form.get('message')
-    user_name = request.form.get('user_name', 'Agent') # Getting the name from frontend
+    user_name = request.form.get('user_name', 'Agent')
     image_file = request.files.get('image')
 
-    # 3. Verify Session Ownership
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("SELECT id FROM sessions WHERE id = %s AND user_id = %s", (session_id, user_id))
-    if not c.fetchone():
-        return jsonify({"error": "Access denied"}), 403
+    if not c.fetchone(): return jsonify({"error": "Access denied"}), 403
     c.close()
     conn.close()
 
-    # 4. Prepare AI Input
     contents = []
-    
-    # Pass user name context to AI invisibly
     if user_text:
-        prompt_with_context = f"(User Name: {user_name}) {user_text}"
-        contents.append(prompt_with_context)
+        contents.append(f"(User Name: {user_name}) {user_text}")
     
+    image_b64 = None
     if image_file:
-        contents.append(Image.open(image_file))
+        # 1. Process for AI
+        img = Image.open(image_file)
+        contents.append(img)
+        
+        # 2. Process for Database Storage (Base64)
+        image_file.seek(0) # Reset pointer
+        file_bytes = image_file.read()
+        image_b64 = base64.b64encode(file_bytes).decode('utf-8')
     
     if not contents: return jsonify({"error": "Empty input"}), 400
 
     try:
-        # 5. Call Google Gemini
         response = client.models.generate_content(
             model="gemini-2.0-flash",
             contents=contents,
@@ -203,17 +209,18 @@ def chat():
         )
         ai_reply = response.text
 
-        # 6. Save to Database
         conn = get_db_connection()
         c = conn.cursor()
         
-        # Save original text (without the name tag)
-        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
-                  (session_id, "user", user_text or "[Image]", bool(image_file)))
-        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
-                  (session_id, "bot", ai_reply, False))
+        # Save User Message (With Image Data if present)
+        c.execute("INSERT INTO messages (session_id, sender, content, has_image, image_data) VALUES (%s, %s, %s, %s, %s)",
+                  (session_id, "user", user_text or "", bool(image_file), image_b64))
         
-        # Auto-rename if new session
+        # Save Bot Message
+        c.execute("INSERT INTO messages (session_id, sender, content, has_image, image_data) VALUES (%s, %s, %s, %s, %s)",
+                  (session_id, "bot", ai_reply, False, None))
+        
+        # Auto-rename logic
         c.execute("SELECT count(*) FROM messages WHERE session_id = %s", (session_id,))
         if c.fetchone()[0] <= 2 and user_text:
             try:
@@ -229,7 +236,6 @@ def chat():
         return jsonify({"reply": ai_reply})
 
     except Exception as e:
-        print(f"Chat Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
