@@ -9,7 +9,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
     <style>
         /* --- THEME VARIABLES --- */
         :root[data-theme="dark"] {
@@ -332,6 +335,172 @@
 <div class="dropdown-menu" id="sidebar-context-menu">
     <div class="dropdown-item danger" id="sidebar-delete-btn"><span class="material-symbols-outlined icon-sm">delete</span>Delete</div>
 </div>
+
+    <style>
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .login-card {
+            background: #111; border: 1px solid var(--border-color);
+            padding: 40px; border-radius: 12px; text-align: center; width: 300px;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+        }
+        .login-btn {
+            width: 100%; padding: 12px; margin-top: 15px; border: 1px solid #333;
+            background: #222; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+            border-radius: 6px; font-weight: bold; transition: 0.2s;
+        }
+        .login-btn:hover { background: #333; border-color: var(--accent-color); }
+        .google-icon { width: 18px; height: 18px; }
+
+        /* User Profile in Top Right */
+        .user-profile-area {
+            margin-left: auto; display: flex; align-items: center; gap: 10px; cursor: pointer;
+            padding: 5px 10px; border-radius: 6px;
+        }
+        .user-profile-area:hover { background: var(--bg-hover); }
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: #333;
+            object-fit: cover; border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2 style="color:var(--accent-color); margin-bottom: 5px;">OSINT ANALYZER</h2>
+            <p style="color:#666; font-size: 0.9rem; margin-bottom: 25px;">Secure Access Required</p>
+            
+            <button class="login-btn" onclick="loginWithGoogle()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="google-icon">
+                Sign in with Google
+            </button>
+            <button class="login-btn" onclick="loginWithPhone()">
+                <span class="material-symbols-outlined icon-sm">phone</span>
+                Sign in with Phone
+            </button>
+            <div id="recaptcha-container"></div>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-content" style="filter: blur(5px); pointer-events: none;">
+        
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <span class="brand-text">OSINT ANALYZER</span>
+            </div>
+            <div class="new-chat-btn-container">
+                <button class="new-chat-btn" onclick="createNewSession()">+ New chat</button>
+            </div>
+            <div class="sidebar-nav-list" id="history-list"></div>
+            <div class="sidebar-bottom-menu">
+                 <div class="menu-item" onclick="logout()">
+                    <span class="material-symbols-outlined icon-sm">logout</span>
+                    Sign Out
+                </div>
+            </div>
+        </div>
+
+        <div id="main-content">
+            <div class="top-nav">
+                <div class="current-chat-title-container">
+                    <span id="current-chat-name">Dashboard</span>
+                </div>
+                
+                <div class="user-profile-area" id="user-info">
+                    <span style="font-size:0.9rem;" id="user-name">Loading...</span>
+                    <img src="" id="user-img" class="user-avatar">
+                </div>
+            </div>
+
+            <div id="chat-scroll-area">
+                <div class="message-container" id="chat-container"></div>
+                <div id="welcome-screen">
+                    <div class="welcome-text">Welcome, Agent.</div>
+                </div>
+            </div>
+
+            <div class="input-footer">
+                <div class="input-box-wrapper">
+                    <input type="file" id="image-upload" style="display:none">
+                    <textarea id="user-input" placeholder="Enter query..." onkeydown="handleEnter(event)"></textarea>
+                    <button class="send-btn" onclick="sendMessage()">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- FIREBASE CONFIG (PASTE YOURS HERE) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
+      authDomain: "osint-ai-eaf84.firebaseapp.com",
+      projectId: "osint-ai-eaf84",
+      storageBucket: "osint-ai-eaf84.firebasestorage.app",
+      messagingSenderId: "610494544590"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    let currentUserToken = null;
+
+    // --- AUTH LOGIC ---
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            // User is signed in
+            console.log("Logged in:", user.email);
+            currentUserToken = await user.getIdToken();
+            
+            // Update UI
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('app-content').style.filter = 'none';
+            document.getElementById('app-content').style.pointerEvents = 'all';
+            document.getElementById('user-name').innerText = user.displayName || user.phoneNumber;
+            document.getElementById('user-img').src = user.photoURL || 'https://www.gravatar.com/avatar/?d=mp';
+
+            // Load Data
+            loadSessions();
+        } else {
+            // User is signed out
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('app-content').style.filter = 'blur(5px)';
+            document.getElementById('app-content').style.pointerEvents = 'none';
+        }
+    });
+
+    function loginWithGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(e => alert(e.message));
+    }
+
+    function loginWithPhone() {
+        // Phone auth requires reCaptcha verifier setup
+        alert("Enable Phone Auth in Firebase Console first, then connect this button to signInWithPhoneNumber.");
+    }
+
+    function logout() {
+        auth.signOut();
+        location.reload();
+    }
+
+    // --- UPDATED FETCH FUNCTION ---
+    // We override the standard fetch to include the Token automatically
+    const originalFetch = window.fetch;
+    window.fetch = async (url, options = {}) => {
+        if (!options.headers) options.headers = {};
+        
+        // Add Authorization Header if we have a token
+        if (currentUserToken) {
+            options.headers['Authorization'] = `Bearer ${currentUserToken}`;
+        }
+        
+        return originalFetch(url, options);
+    };
+
 
 
 <script>
