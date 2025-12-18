@@ -121,80 +121,73 @@ def get_history(session_id):
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    user_id = verify_user(request)
+    if not user_id: return jsonify({"error": "Unauthorized"}), 401
+
     session_id = request.form.get('session_id')
     user_text = request.form.get('message')
+    user_name = request.form.get('user_name', 'Agent') # <--- Get User Name
     image_file = request.files.get('image')
 
-    if not session_id: return jsonify({"error": "No session ID"}), 400
+    # Verify ownership
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT id FROM sessions WHERE id = %s AND user_id = %s", (session_id, user_id))
+    if not c.fetchone():
+        return jsonify({"error": "Access denied"}), 403
+    c.close()
+    conn.close()
 
+    # Prepare Gemini Input
     contents = []
-    if user_text: contents.append(user_text)
-    has_image = False
     
-    if image_file:
-        img = process_image(image_file)
-        contents.append(img)
-        has_image = True
-
-    if not contents: return jsonify({"error": "No input provided"}), 400
+    # Prepend name context to the prompt invisibly
+    final_prompt = user_text
+    if user_text:
+        # We wrap the user's name in a system-like tag so the AI knows who it's talking to
+        final_prompt = f"(User: {user_name}) {user_text}"
+        contents.append(final_prompt)
+        
+    if image_file: contents.append(Image.open(image_file))
+    
+    if not contents: return jsonify({"error": "Empty input"}), 400
 
     try:
-        # 1. Generate Main Response
         response = client.models.generate_content(
             model="gemini-2.0-flash",
             contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                temperature=0.7,
-                max_output_tokens=4096
+                temperature=0.7
             )
         )
         ai_reply = response.text
 
         conn = get_db_connection()
-        if conn:
-            c = conn.cursor()
-            
-            # 2. Save Messages
-            c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
-                      (session_id, "user", user_text or "[Image Uploaded]", has_image))
-            
-            c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
-                      (session_id, "bot", ai_reply, False))
-            
-            # 3. AUTO-RENAME LOGIC (Updated)
-            c.execute("SELECT count(*) FROM messages WHERE session_id = %s", (session_id,))
-            count = c.fetchone()[0]
-            
-            # Only rename if it's the very first exchange (User + Bot = 2 messages)
-            if count <= 2:
-                title_prompt = ""
-                if user_text:
-                    # UPDATED PROMPT: Specific constraint on 5 words
-                    title_prompt = f"Generate a specific, technical title (max 5 words) for this OSINT query: '{user_text}'. Do not use quotes."
-                elif has_image:
-                    title_prompt = "Generate a 3-word title for an image analysis investigation."
+        c = conn.cursor()
+        
+        # Save original user text (not the one with the name tag)
+        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
+                  (session_id, "user", user_text or "[Image]", bool(image_file)))
+        c.execute("INSERT INTO messages (session_id, sender, content, has_image) VALUES (%s, %s, %s, %s)",
+                  (session_id, "bot", ai_reply, False))
+        
+        # Auto-rename logic
+        c.execute("SELECT count(*) FROM messages WHERE session_id = %s", (session_id,))
+        if c.fetchone()[0] <= 2 and user_text:
+            try:
+                title_prompt = f"Generate a technical 4-word title for: {user_text}"
+                title_resp = client.models.generate_content(model="gemini-2.0-flash", contents=title_prompt)
+                clean_title = title_resp.text.strip().replace('"','')
+                c.execute("UPDATE sessions SET title = %s WHERE id = %s", (clean_title, session_id))
+            except: pass
 
-                if title_prompt:
-                    try:
-                        title_resp = client.models.generate_content(
-                            model="gemini-2.0-flash", 
-                            contents=title_prompt
-                        )
-                        clean_title = title_resp.text.strip().replace('"','').replace('*','')
-                        # Update the title in the database
-                        c.execute("UPDATE sessions SET title = %s WHERE id = %s", (clean_title, session_id))
-                    except Exception as e:
-                        print(f"Title generation failed: {e}")
-
-            conn.commit()
-            c.close()
-            conn.close()
-
+        conn.commit()
+        c.close()
+        conn.close()
         return jsonify({"reply": ai_reply})
 
     except Exception as e:
-        print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/activity', methods=['GET'])
