@@ -52,6 +52,10 @@
         .material-symbols-outlined { font-size: 20px; }
         .icon-sm { font-size: 18px; }
 
+        /* --- ANIMATIONS (RESTORED) --- */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         .app-container { display: flex; width: 100%; height: 100%; position: relative; }
 
         /* --- SIDEBAR --- */
@@ -66,7 +70,6 @@
         .brand-text { font-weight: 800; font-family: monospace; letter-spacing: 1px; color: var(--accent-color); }
         .sidebar-btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; border-radius: 50%; }
         
-        /* Mobile Overlay Background */
         #mobile-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.5); z-index: 90; display: none;
@@ -91,7 +94,6 @@
         /* --- MAIN CONTENT --- */
         #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; width: 100%; }
         
-        /* Mobile Header (Hidden on Desktop) */
         .mobile-header {
             display: none; height: 50px; align-items: center; justify-content: space-between; 
             padding: 0 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-app);
@@ -106,7 +108,6 @@
         #chat-scroll-area { flex: 1; overflow-y: auto; padding-top: 70px; padding-bottom: 20px; }
         .message-container { max-width: 800px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; }
 
-        /* Bubbles */
         .message { margin-bottom: 25px; display: flex; flex-direction: column; max-width: 85%; position: relative; }
         .message.user { align-self: flex-end; align-items: flex-end; max-width: 90%; }
         .message.bot { align-self: flex-start; align-items: flex-start; width: 100%; max-width: 95%; }
@@ -133,35 +134,55 @@
         .preview-thumb { width: 100%; height: 100%; object-fit: cover; }
         .remove-file-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        /* --- MOBILE RESPONSIVE STYLES --- */
-        @media (max-width: 768px) {
-            #sidebar {
-                position: absolute; height: 100%; width: 80%; max-width: 300px; 
-                transform: translateX(-100%); /* Hide by default */
-            }
-            #sidebar.active { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
-            
-            #sidebar.collapsed { width: 80%; max-width: 300px; transform: translateX(-100%); } /* Reset logic for mobile */
+        /* --- WELCOME SCREEN (FIXED) --- */
+        #welcome-screen { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            text-align: center; display: none; width: 100%; max-width: 600px;
+        }
+        
+        .welcome-title { 
+            font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; 
+            opacity: 0; animation: slideUp 0.6s forwards;
+        }
+        
+        .welcome-subtext {
+            color: var(--text-secondary); margin-bottom: 30px;
+            opacity: 0; animation: slideUp 0.6s 0.2s forwards;
+        }
 
-            .mobile-header { display: flex; } /* Show header on mobile */
-            .top-nav { top: 50px; justify-content: flex-end; padding: 10px; pointer-events: none;} /* Move user chip down */
+        .bubble-grid { 
+            display: flex; gap: 10px; justify-content: center; margin-top: 30px; 
+            opacity: 0; animation: fadeIn 0.8s 0.4s forwards;
+        }
+        
+        .suggestion-chip { 
+            background: var(--bg-input); border: 1px solid var(--border-color); 
+            padding: 10px 20px; border-radius: 20px; cursor: pointer; 
+            font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .suggestion-chip:hover { border-color: var(--accent-color); background: var(--bg-hover); }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            #sidebar { position: absolute; height: 100%; width: 80%; max-width: 300px; transform: translateX(-100%); }
+            #sidebar.active { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
+            #sidebar.collapsed { width: 80%; max-width: 300px; transform: translateX(-100%); } 
+            .mobile-header { display: flex; } 
+            .top-nav { top: 50px; justify-content: flex-end; padding: 10px; pointer-events: none;} 
             .user-chip { padding: 4px 8px; pointer-events: auto; }
-            .user-name-display { display: none; } /* Hide name on small screens */
-            
+            .user-name-display { display: none; }
             #chat-scroll-area { padding-top: 60px; }
             .message-container { padding: 0 15px; }
             .input-footer { padding: 10px; }
+            .action-row { opacity: 1; }
             
-            .action-row { opacity: 1; } /* Always show actions on touch */
-            
-            /* Welcome screen adjustments */
-            #welcome-screen { width: 90%; top: 40%; }
+            /* Welcome Mobile */
+            #welcome-screen { width: 90%; top: 45%; }
             .welcome-title { font-size: 1.8rem; }
-            .bubble-grid { flex-direction: column; align-items: center; }
-            .suggestion-chip { width: 100%; box-sizing: border-box; text-align: center; }
+            .bubble-grid { flex-direction: column; align-items: center; gap: 15px;}
+            .suggestion-chip { width: 100%; justify-content: center; box-sizing: border-box; }
         }
 
-        /* Overlays */
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .login-btn { padding: 12px 24px; background: #fff; color: #000; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; display: flex; gap: 10px; align-items: center;}
         
@@ -233,7 +254,8 @@
                     <span class="material-symbols-outlined">menu</span>
                 </button>
                 <span class="brand-text" style="font-size: 1rem;">OSINT</span>
-                <div style="width: 24px;"></div> </div>
+                <div style="width: 24px;"></div>
+            </div>
 
             <div class="top-nav">
                 <div class="user-chip" onclick="openProfile()">
@@ -244,13 +266,20 @@
 
             <div id="chat-scroll-area">
                 <div class="message-container" id="chat-container"></div>
+                
                 <div id="welcome-screen">
                     <div class="welcome-title">Welcome, <span id="welcome-user-name">Hacker</span>.</div>
-                    <p style="color:var(--text-secondary)">Secure channel established.</p>
+                    <p class="welcome-subtext">Secure channel established.</p>
                     <div class="bubble-grid">
-                        <div class="suggestion-chip" onclick="startQuickAction('Analyze this image for geolocation clues')">📸 Image Intel</div>
-                        <div class="suggestion-chip" onclick="startQuickAction('Find social media accounts for username:')">🔎 Deep Search</div>
-                        <div class="suggestion-chip" onclick="startQuickAction('List common OSINT tools for email investigation')">🛠️ Tools List</div>
+                        <div class="suggestion-chip" onclick="startQuickAction('Analyze this image for geolocation clues')">
+                            <span>📸</span> Image Intel
+                        </div>
+                        <div class="suggestion-chip" onclick="startQuickAction('Find social media accounts for username:')">
+                            <span>🔎</span> Deep Search
+                        </div>
+                        <div class="suggestion-chip" onclick="startQuickAction('List common OSINT tools for email investigation')">
+                            <span>🛠️</span> Tools List
+                        </div>
                     </div>
                 </div>
             </div>
@@ -330,7 +359,6 @@
     let currentSessionId = null;
     const API_URL = '';
     
-    // FILE HANDLING
     function handleFileSelect() {
         const file = document.getElementById('image-upload').files[0];
         if (file) {
@@ -348,24 +376,18 @@
         document.getElementById('image-preview-element').src = '';
     }
 
-    // UTILS
     function copyText(text) { navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!")); }
     function editText(text) { document.getElementById('user-input').value = text; document.getElementById('user-input').focus(); }
 
-    // CHAT RENDERING
     function appendMessage(sender, text, imageData = null) {
         const div = document.createElement('div');
         div.className = `message ${sender}`;
-        
         let contentHtml = '';
         if (imageData) { contentHtml += `<img src="data:image/jpeg;base64,${imageData}" class="chat-image">`; }
         contentHtml += sender === 'bot' ? marked.parse(text) : text.replace(/\n/g, '<br>');
-        
-        let actionsHtml = `<div class="action-row">
-            <div class="action-btn" onclick="copyText(\`${text.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">content_copy</span> Copy</div>`;
+        let actionsHtml = `<div class="action-row"><div class="action-btn" onclick="copyText(\`${text.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">content_copy</span> Copy</div>`;
         if (sender === 'user') { actionsHtml += `<div class="action-btn" onclick="editText(\`${text.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">edit</span> Edit</div>`; }
         actionsHtml += `</div>`;
-
         div.innerHTML = `<div class="message-content">${contentHtml}</div>${actionsHtml}`;
         document.getElementById('chat-container').appendChild(div);
         div.querySelectorAll('pre code').forEach(hljs.highlightElement);
@@ -381,7 +403,6 @@
         container.innerHTML = '';
         data.messages.forEach(m => appendMessage(m.sender, m.content, m.image));
         loadSessions();
-        // Close sidebar on mobile after selecting
         if(window.innerWidth <= 768) {
             document.getElementById('sidebar').classList.remove('active');
             document.getElementById('mobile-overlay').style.display = 'none';
@@ -393,11 +414,8 @@
         const fileInput = document.getElementById('image-upload');
         const text = input.value.trim();
         const file = fileInput.files[0];
-
         if(!text && !file) return;
         if(!currentSessionId) { await createNewSession(null, true); }
-
-        // Optimistic Render
         let previewBase64 = null;
         if(file) {
             const reader = new FileReader();
@@ -407,17 +425,14 @@
                  appendMessage('user', text, previewBase64);
             }
         } else { appendMessage('user', text); }
-
         input.value = '';
         clearFile();
         const loadingId = appendLoading();
-
         const formData = new FormData();
         formData.append('session_id', currentSessionId);
         formData.append('user_name', currentUserName);
         if(text) formData.append('message', text);
         if(file) formData.append('image', file);
-
         try {
             const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
             const data = await res.json();
@@ -467,17 +482,13 @@
 
     function toggleWelcome(show) { document.getElementById('welcome-screen').style.display = show ? 'block' : 'none'; document.getElementById('chat-container').style.display = show ? 'none' : 'flex'; if(show) currentSessionId = null; }
     
-    // --- RESPONSIVE SIDEBAR TOGGLE ---
     function toggleSidebar() { 
         const sb = document.getElementById('sidebar');
         const overlay = document.getElementById('mobile-overlay');
-        
         if (window.innerWidth <= 768) {
-            // Mobile: Slide In/Out
             sb.classList.toggle('active');
             overlay.style.display = sb.classList.contains('active') ? 'block' : 'none';
         } else {
-            // Desktop: Collapse/Expand
             sb.classList.toggle('collapsed');
         }
     }
