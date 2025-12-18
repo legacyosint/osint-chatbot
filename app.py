@@ -183,7 +183,7 @@ def chat():
 
     contents = []
     if user_text:
-        contents.append(f"(User Name: {user_name}) {user_text}")
+        contents.append(user_text)
     
     image_b64 = None
     if image_file:
