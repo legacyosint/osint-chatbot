@@ -2,7 +2,7 @@ import os
 import sqlite3
 import base64
 import io
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import google.generativeai as genai
 from PIL import Image
@@ -82,7 +82,11 @@ def get_history(session_id):
     messages = [{"sender": row[0], "content": row[1]} for row in c.fetchall()]
     conn.close()
     return jsonify(messages)
-
+    
+@app.route('/')
+def home():
+    return render_template('index.html')
+    
 @app.route('/chat', methods=['POST'])
 def chat():
     session_id = request.form.get('session_id')
