@@ -29,6 +29,8 @@
             --user-bubble-bg: #262626;
             --user-bubble-text: #fff;
             --bot-bubble-border: #00ff9d;
+            --think-bg: #111;
+            --think-border: #333;
         }
 
         :root[data-theme="light"] {
@@ -45,83 +47,52 @@
             --user-bubble-bg: #007aff;
             --user-bubble-text: #fff;
             --bot-bubble-border: #007aff;
+            --think-bg: #f9f9f9;
+            --think-border: #ddd;
         }
 
         /* --- GLOBAL --- */
-        body { 
-            margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background: var(--bg-app); color: var(--text-primary); 
-            height: 100dvh; /* Dynamic Height for Mobile Browsers */
-            overflow: hidden; 
-        }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg-app); color: var(--text-primary); height: 100dvh; overflow: hidden; }
         .material-symbols-outlined { font-size: 20px; }
         .icon-sm { font-size: 18px; }
 
-        /* --- ANIMATIONS --- */
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .app-container { display: flex; width: 100%; height: 100%; position: relative; }
 
         /* --- SIDEBAR --- */
-        #sidebar { 
-            width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); 
-            display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease, width 0.3s ease; 
-            z-index: 100;
-        }
+        #sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease, width 0.3s ease; z-index: 100; }
         #sidebar.collapsed { width: 0px; border: none; overflow: hidden;}
-        
         .sidebar-header { padding: 20px; display: flex; align-items: center; justify-content: space-between; height: 60px; box-sizing: border-box;}
         .brand-text { font-weight: 800; font-family: monospace; letter-spacing: 1px; color: var(--accent-color); }
         .sidebar-btn-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; border-radius: 50%; }
-        
-        #mobile-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.5); z-index: 90; display: none;
-        }
-
+        #mobile-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 90; display: none; }
         .new-chat-btn-container { padding: 0 15px 10px; }
         .new-chat-btn { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; }
-        
         #history-list { flex: 1; overflow-y: auto; padding: 10px 0; }
         .chat-item { padding: 10px 20px; display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-primary); font-size: 0.9rem; text-decoration: none; position: relative; white-space: nowrap; overflow: hidden; }
         .chat-item:hover, .chat-item.active { background: var(--bg-hover); }
         .item-options-btn { opacity: 0; margin-left: auto; color: var(--text-secondary); transition: 0.2s; }
         .chat-item:hover .item-options-btn { opacity: 1; }
-
         .sidebar-footer { padding: 15px; border-top: 1px solid var(--border-color); position: relative; }
         .settings-trigger { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; border-radius: 8px; color: var(--text-primary); transition: 0.2s; }
-        
         #settings-menu { position: absolute; bottom: 70px; left: 10px; width: 220px; background: var(--bg-dropdown); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); padding: 5px; display: none; z-index: 1000; }
         .settings-item { padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; border-radius: 6px; font-size: 0.9rem; color: var(--text-primary); }
         .settings-item.danger { color: #ff453a; }
 
         /* --- MAIN CONTENT --- */
-        #main-content { 
-            flex: 1; display: flex; flex-direction: column; 
-            background: var(--bg-chat); position: relative; width: 100%; 
-            height: 100%; /* Ensure full height */
-        }
-        
-        .mobile-header {
-            display: none; height: 50px; align-items: center; justify-content: space-between; 
-            padding: 0 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-app);
-            position: absolute; top:0; left:0; width: 100%; box-sizing: border-box; z-index: 50;
-        }
-
+        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; width: 100%; height: 100%; }
+        .mobile-header { display: none; height: 50px; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-app); position: absolute; top:0; left:0; width: 100%; box-sizing: border-box; z-index: 50; }
         .top-nav { height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; position: absolute; top:0; right: 0; width: 100%; box-sizing: border-box; z-index: 10; pointer-events: none; }
         .user-chip { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 20px; cursor: pointer; transition: 0.2s; background: rgba(0,0,0,0.2); backdrop-filter: blur(5px); }
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
         .user-name-display { font-size: 0.9rem; font-weight: 600; padding-right: 5px; }
 
-        #chat-scroll-area { 
-            flex: 1; overflow-y: auto; 
-            padding-top: 70px; 
-            /* Padding bottom ensures text doesn't hide behind input */
-            padding-bottom: 10px; 
-        }
+        #chat-scroll-area { flex: 1; overflow-y: auto; padding-top: 70px; padding-bottom: 10px; }
         .message-container { max-width: 800px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; }
 
+        /* --- BUBBLES --- */
         .message { margin-bottom: 25px; display: flex; flex-direction: column; max-width: 85%; position: relative; }
         .message.user { align-self: flex-end; align-items: flex-end; max-width: 90%; }
         .message.bot { align-self: flex-start; align-items: flex-start; width: 100%; max-width: 95%; }
@@ -130,85 +101,84 @@
         .message.user .message-content { background: var(--user-bubble-bg); color: var(--user-bubble-text); border-radius: 18px 18px 4px 18px; }
         .message.bot .message-content { background: transparent; border: 1px solid var(--bot-bubble-border); color: var(--text-primary); border-radius: 12px; width: 100%; }
 
+        /* --- THINKING WIDGET STYLE --- */
+        .thinking-container {
+            width: 100%; max-width: 100%; margin-bottom: 10px;
+        }
+        details.thinking-details {
+            background: var(--think-bg);
+            border: 1px solid var(--think-border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        details.thinking-details summary {
+            list-style: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 500;
+            user-select: none;
+        }
+        details.thinking-details summary::-webkit-details-marker { display: none; }
+        details.thinking-details summary:hover { color: var(--text-primary); background: var(--bg-hover); }
+        
+        /* The Robot Icon in the Summary */
+        .thinking-icon { color: var(--accent-color); font-size: 18px; }
+        
+        .thinking-content {
+            padding: 12px 15px;
+            border-top: 1px solid var(--think-border);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            background: rgba(0,0,0,0.2);
+        }
+
         .chat-image { max-width: 100%; border-radius: 12px; margin-bottom: 8px; display: block; border: 1px solid rgba(255,255,255,0.1); }
         .action-row { display: flex; gap: 10px; margin-top: 5px; opacity: 0; transition: 0.2s; }
         .message:hover .action-row { opacity: 1; }
         .action-btn { cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; font-size: 0.75rem; }
 
-        pre { background: #1e1e1e !important; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; margin-top: 10px; max-width: 100%;}
+        pre { background: #1e1e1e !important; padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; margin-top: 10px; max-width: 100%; }
         code { font-family: 'Consolas', monospace; }
 
-        /* --- INPUT AREA --- */
-        .input-footer { 
-            padding: 10px 15px; 
-            background: var(--bg-app);
-            display: flex; justify-content: center;
-            /* Sticky footer ensures it stays visible */
-            position: relative; 
-            z-index: 20;
-            padding-bottom: calc(15px + env(safe-area-inset-bottom));
-            border-top: 1px solid var(--border-color); /* Separator */
-        }
-        
-        .input-box-wrapper { 
-            width: 100%; max-width: 800px; background: var(--bg-input); 
-            border: 1px solid var(--border-color); border-radius: 24px; 
-            padding: 8px 15px; display: flex; flex-direction: column; 
-            gap: 8px; transition: border-color 0.2s; 
-        }
+        /* --- INPUT --- */
+        .input-footer { padding: 10px 15px; background: var(--bg-app); display: flex; justify-content: center; position: relative; z-index: 20; padding-bottom: calc(15px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-color); }
+        .input-box-wrapper { width: 100%; max-width: 800px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 24px; padding: 8px 15px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s; }
         .input-row { display: flex; align-items: center; gap: 10px; width: 100%; }
-        
-        textarea { 
-            flex: 1; background: transparent; border: none; color: var(--text-primary); 
-            resize: none; max-height: 120px; min-height: 24px; 
-            font-size: 1rem; outline: none; padding: 4px 0;
-            line-height: 1.4;
-        }
-        
-        /* DYNAMIC SEND BUTTON */
-        .send-btn { 
-            background: var(--accent-color); color: #000; border: none; 
-            width: 34px; height: 34px; border-radius: 50%; 
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0;
-        }
+        textarea { flex: 1; background: transparent; border: none; color: var(--text-primary); resize: none; max-height: 120px; min-height: 24px; font-size: 1rem; outline: none; padding: 4px 0; line-height: 1.4; }
+        .send-btn { background: var(--accent-color); color: #000; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0; }
         .send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 0 8px var(--accent-color); }
         .send-btn:disabled { background: var(--border-color); cursor: default; opacity: 0.5; transform: none; box-shadow: none;}
-        .send-btn .material-symbols-outlined { font-size: 18px; margin-left: 2px; }
-
         #image-preview-container { display: none; width: 60px; height: 60px; position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); animation: fadeIn 0.3s; margin-bottom: 5px;}
         .preview-thumb { width: 100%; height: 100%; object-fit: cover; }
         .remove-file-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        /* --- WELCOME SCREEN --- */
-        #welcome-screen { 
-            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); 
-            text-align: center; display: none; width: 90%; max-width: 600px;
-        }
+        /* --- WELCOME --- */
+        #welcome-screen { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; width: 90%; max-width: 600px; }
         .welcome-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; opacity: 0; animation: slideUp 0.6s forwards; }
         .welcome-subtext { color: var(--text-secondary); margin-bottom: 30px; opacity: 0; animation: slideUp 0.6s 0.2s forwards; }
         .bubble-grid { display: flex; gap: 10px; justify-content: center; margin-top: 30px; opacity: 0; animation: fadeIn 0.8s 0.4s forwards; }
         .suggestion-chip { background: var(--bg-input); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .suggestion-chip:hover { border-color: var(--accent-color); background: var(--bg-hover); }
 
-        /* Mobile Adjustments */
         @media (max-width: 768px) {
             #sidebar { position: absolute; height: 100%; width: 80%; max-width: 300px; transform: translateX(-100%); }
             #sidebar.active { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
             #sidebar.collapsed { width: 80%; max-width: 300px; transform: translateX(-100%); } 
-            
             .mobile-header { display: flex; } 
             .top-nav { top: 50px; justify-content: flex-end; padding: 10px; pointer-events: none;} 
             .user-chip { padding: 4px 8px; pointer-events: auto; }
             .user-name-display { display: none; }
-            
             #chat-scroll-area { padding-top: 60px; }
             .message-container { padding: 0 15px; }
-            
-            /* Input Area Mobile Tweaks */
             .input-footer { padding: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
-            textarea { font-size: 16px; } /* Prevent iOS zoom */
-            
+            textarea { font-size: 16px; } 
             .action-row { opacity: 1; }
             #welcome-screen { top: 45%; }
             .welcome-title { font-size: 1.8rem; }
@@ -218,7 +188,6 @@
 
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .login-btn { padding: 12px 24px; background: #fff; color: #000; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; display: flex; gap: 10px; align-items: center;}
-        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 2000; }
         .modal-card { background: var(--bg-dropdown); border: 1px solid var(--border-color); width: 90%; max-width: 350px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); text-align: center; position: relative; }
         .modal-close { position: absolute; top: 15px; right: 15px; cursor: pointer; color: var(--text-secondary); }
@@ -250,27 +219,18 @@
     <div id="mobile-overlay" onclick="toggleSidebar()"></div>
 
     <div class="app-container" id="app-content" style="filter: blur(5px); pointer-events: none;">
-        
         <div id="sidebar">
             <div class="sidebar-header">
                 <span class="brand-text">OSINT</span>
-                <button class="sidebar-btn-icon" onclick="toggleSidebar()" style="display: none; @media(min-width:769px){display:block;}">
-                    <span class="material-symbols-outlined">menu_open</span>
-                </button>
-                <button class="sidebar-btn-icon" onclick="toggleSidebar()" style="display: block; @media(min-width:769px){display:none;}">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
+                <button class="sidebar-btn-icon" onclick="toggleSidebar()" style="display: none; @media(min-width:769px){display:block;}"><span class="material-symbols-outlined">menu_open</span></button>
+                <button class="sidebar-btn-icon" onclick="toggleSidebar()" style="display: block; @media(min-width:769px){display:none;}"><span class="material-symbols-outlined">close</span></button>
             </div>
             <div class="new-chat-btn-container">
-                <button class="new-chat-btn" onclick="createNewSession(); if(window.innerWidth<=768) toggleSidebar();">
-                    <span class="material-symbols-outlined">add</span> New Chat
-                </button>
+                <button class="new-chat-btn" onclick="createNewSession(); if(window.innerWidth<=768) toggleSidebar();"><span class="material-symbols-outlined">add</span> New Chat</button>
             </div>
             <div id="history-list"></div>
             <div class="sidebar-footer">
-                <div class="settings-trigger" onclick="toggleSettingsMenu()">
-                    <span class="material-symbols-outlined">settings</span> <span>Settings</span>
-                </div>
+                <div class="settings-trigger" onclick="toggleSettingsMenu()"><span class="material-symbols-outlined">settings</span> <span>Settings</span></div>
                 <div id="settings-menu">
                     <div class="settings-item" onclick="toggleTheme()"><span class="material-symbols-outlined">contrast</span> Theme</div>
                     <a href="https://docs.google.com/forms/d/e/1FAIpQLScxln0wQ_S7q69WEbE1WtjB4-cYaNphpRki0sLVqyBip2W5qA/viewform" target="_blank" class="settings-item" style="text-decoration:none;"><span class="material-symbols-outlined">chat_bubble</span> Feedback</a>
@@ -283,13 +243,10 @@
 
         <div id="main-content">
             <div class="mobile-header">
-                <button class="sidebar-btn-icon" onclick="toggleSidebar()">
-                    <span class="material-symbols-outlined">menu</span>
-                </button>
+                <button class="sidebar-btn-icon" onclick="toggleSidebar()"><span class="material-symbols-outlined">menu</span></button>
                 <span class="brand-text" style="font-size: 1rem;">OSINT</span>
                 <div style="width: 24px;"></div>
             </div>
-
             <div class="top-nav">
                 <div class="user-chip" onclick="openProfile()">
                     <span class="user-name-display" id="header-name">Agent</span>
@@ -299,20 +256,13 @@
 
             <div id="chat-scroll-area">
                 <div class="message-container" id="chat-container"></div>
-                
                 <div id="welcome-screen">
                     <div class="welcome-title">Welcome, <span id="welcome-user-name">Hacker</span>.</div>
                     <p class="welcome-subtext">Secure channel established.</p>
                     <div class="bubble-grid">
-                        <div class="suggestion-chip" onclick="startQuickAction('Analyze this image for geolocation clues')">
-                            <span>📸</span> Image Intel
-                        </div>
-                        <div class="suggestion-chip" onclick="startQuickAction('Find social media accounts for username:')">
-                            <span>🔎</span> Deep Search
-                        </div>
-                        <div class="suggestion-chip" onclick="startQuickAction('List common OSINT tools for email investigation')">
-                            <span>🛠️</span> Tools List
-                        </div>
+                        <div class="suggestion-chip" onclick="startQuickAction('Analyze this image for geolocation clues')"><span>📸</span> Image Intel</div>
+                        <div class="suggestion-chip" onclick="startQuickAction('Find social media accounts for username:')"><span>🔎</span> Deep Search</div>
+                        <div class="suggestion-chip" onclick="startQuickAction('List common OSINT tools for email investigation')"><span>🛠️</span> Tools List</div>
                     </div>
                 </div>
             </div>
@@ -329,10 +279,7 @@
                             <span class="material-symbols-outlined">attach_file</span>
                         </label>
                         <textarea id="user-input" rows="1" placeholder="Enter target data..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="handleEnter(event)"></textarea>
-                        
-                        <button class="send-btn" onclick="sendMessage()">
-                            <span class="material-symbols-outlined icon-sm">send</span>
-                        </button>
+                        <button class="send-btn" onclick="sendMessage()"><span class="material-symbols-outlined icon-sm">send</span></button>
                     </div>
                 </div>
             </div>
@@ -344,7 +291,7 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG (ADD YOURS HERE) ---
+    // --- FIREBASE CONFIG ---
     const firebaseConfig = {
       apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
       authDomain: "osint-ai-eaf84.firebaseapp.com",
@@ -418,12 +365,43 @@
     function appendMessage(sender, text, imageData = null) {
         const div = document.createElement('div');
         div.className = `message ${sender}`;
+        
+        // --- LOGIC FOR SHOW THINKING ---
+        let mainText = text;
+        let thoughtHtml = '';
+        
+        // Check for <think> tags
+        const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkMatch) {
+            const thinkingContent = thinkMatch[1].trim();
+            mainText = text.replace(thinkMatch[0], '').trim();
+            
+            // Create the Collapsible Widget
+            thoughtHtml = `
+            <div class="thinking-container">
+                <details class="thinking-details">
+                    <summary>
+                        <span class="material-symbols-outlined thinking-icon">smart_toy</span>
+                        Show thinking
+                    </summary>
+                    <div class="thinking-content">${thinkingContent}</div>
+                </details>
+            </div>
+            `;
+        }
+
         let contentHtml = '';
         if (imageData) { contentHtml += `<img src="data:image/jpeg;base64,${imageData}" class="chat-image">`; }
-        contentHtml += sender === 'bot' ? marked.parse(text) : text.replace(/\n/g, '<br>');
-        let actionsHtml = `<div class="action-row"><div class="action-btn" onclick="copyText(\`${text.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">content_copy</span> Copy</div>`;
-        if (sender === 'user') { actionsHtml += `<div class="action-btn" onclick="editText(\`${text.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">edit</span> Edit</div>`; }
+        
+        // Render thinking widget FIRST, then the rest
+        if (thoughtHtml) { contentHtml += thoughtHtml; }
+        
+        contentHtml += sender === 'bot' ? marked.parse(mainText) : mainText.replace(/\n/g, '<br>');
+        
+        let actionsHtml = `<div class="action-row"><div class="action-btn" onclick="copyText(\`${mainText.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">content_copy</span> Copy</div>`;
+        if (sender === 'user') { actionsHtml += `<div class="action-btn" onclick="editText(\`${mainText.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">edit</span> Edit</div>`; }
         actionsHtml += `</div>`;
+        
         div.innerHTML = `<div class="message-content">${contentHtml}</div>${actionsHtml}`;
         document.getElementById('chat-container').appendChild(div);
         div.querySelectorAll('pre code').forEach(hljs.highlightElement);
