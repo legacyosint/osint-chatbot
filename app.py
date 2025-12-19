@@ -129,7 +129,6 @@ def get_history(session_id):
     c = conn.cursor()
     c.execute("SELECT title FROM sessions WHERE id = %s AND user_id = %s", (session_id, user_id))
     if not c.fetchone(): return jsonify({"error": "Access denied"}), 403
-    # UPDATED: Fetch image_data safely
     c.execute("SELECT sender, content, image_data FROM messages WHERE session_id = %s ORDER BY id ASC", (session_id,))
     messages = [{"sender": r[0], "content": r[1], "image": r[2]} for r in c.fetchall()]
     return jsonify({"title": "Chat", "messages": messages})
@@ -153,38 +152,38 @@ def chat():
 
         user_profile = get_long_term_memory(user_id)
         
-        # SYSTEM PROMPT (Enforces the <think> structure)
+        # SYSTEM PROMPT (FIXED: Explicitly prevents formatting the final answer as a code block)
         system_instruction = f"""
         You are 'OSINT-MIND', a senior cyber-intelligence analyst.
         USER DOSSIER: {user_profile}
         
         INSTRUCTIONS:
-        1. STRUCTURE: For every response involving analysis, logic, or code, start with a hidden thought block:
-           <think>
-           [Your internal reasoning, search strategy, and rough draft]
-           </think>
-           
-           [Your final, clean, professional response for the user goes here. Plain text and Markdown only.]
-
-        2. BEHAVIOR: 
-           - For simple greetings ("hi"), do NOT use <think>.
-           - Analyze images objectively. Do NOT assume the person in the image is the user.
-           - Be concise and technical.
+        1. THOUGHT PROCESS:
+           - For analysis or reasoning, start with a hidden block: <think> [Your reasoning here] </think>.
+        
+        2. FINAL RESPONSE FORMAT:
+           - Your actual answer to the user comes AFTER the </think> tag.
+           - Write in **PLAIN TEXT** or standard Markdown.
+           - **DO NOT** wrap your entire response in a code block (```).
+           - Only use code blocks (```python) for actual code snippets.
+           - If finding a location or profile, provide direct links.
+        
+        3. IMAGE ANALYSIS:
+           - Analyze images objectively based ONLY on visual evidence.
         """
 
         contents = []
         
-        # 2. Add History Context (With Error Handling)
+        # 2. Add History Context
         for sender, msg, has_img, img_data in history:
             role = "user" if sender == "user" else "model"
             parts = []
             if msg: parts.append(types.Part.from_text(text=msg))
             
-            # SAFE IMAGE LOADING
+            # SAFE IMAGE LOADING (Prevents JSON Error)
             if has_img and img_data:
                 try:
-                    # Only try to load if data seems valid (len > 50 chars)
-                    if len(img_data) > 50:
+                    if len(img_data) > 100: # Check if valid base64
                         image_bytes = base64.b64decode(img_data)
                         parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
                 except Exception as e:
@@ -205,14 +204,13 @@ def chat():
                 img.save(buf, format='JPEG')
                 image_bytes = buf.getvalue()
                 
-                # Add to Gemini Request
-                current_parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
-                
-                # Save to DB
-                image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+                # Check size to ensure we don't send empty data
+                if len(image_bytes) > 0:
+                    current_parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
+                    image_b64 = base64.b64encode(image_bytes).decode('utf-8')
             except Exception as e:
                 print(f"Current Image Error: {e}")
-                # Don't crash, just proceed without image
+                # Proceed without image instead of crashing
                 pass
 
         if current_parts:
@@ -239,7 +237,6 @@ def chat():
         if user_text:
             threading.Thread(target=update_long_term_memory, args=(user_id, user_text, ai_reply)).start()
 
-        # Auto-Title (Only for first message)
         if len(history) == 0:
             try:
                 t_resp = client.models.generate_content(model="gemini-2.0-flash", contents=f"Generate 3-word title: {user_text}")
