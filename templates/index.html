@@ -101,7 +101,7 @@
         .message.user .message-content { background: var(--user-bubble-bg); color: var(--user-bubble-text); border-radius: 18px 18px 4px 18px; }
         .message.bot .message-content { background: transparent; border: 1px solid var(--bot-bubble-border); color: var(--text-primary); border-radius: 12px; width: 100%; }
 
-        /* --- THINKING WIDGET STYLE --- */
+        /* --- SHOW THINKING WIDGET --- */
         .thinking-container {
             width: 100%; max-width: 100%; margin-bottom: 10px;
         }
@@ -125,7 +125,7 @@
         details.thinking-details summary::-webkit-details-marker { display: none; }
         details.thinking-details summary:hover { color: var(--text-primary); background: var(--bg-hover); }
         
-        /* Robot Icon */
+        /* Sparkle Icon */
         .thinking-icon { color: var(--accent-color); font-size: 18px; }
         
         .thinking-content {
@@ -152,9 +152,11 @@
         .input-box-wrapper { width: 100%; max-width: 800px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 24px; padding: 8px 15px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s; }
         .input-row { display: flex; align-items: center; gap: 10px; width: 100%; }
         textarea { flex: 1; background: transparent; border: none; color: var(--text-primary); resize: none; max-height: 120px; min-height: 24px; font-size: 1rem; outline: none; padding: 4px 0; line-height: 1.4; }
+        
         .send-btn { background: var(--accent-color); color: #000; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0; }
         .send-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 0 8px var(--accent-color); }
         .send-btn:disabled { background: var(--border-color); cursor: default; opacity: 0.5; transform: none; box-shadow: none;}
+        
         #image-preview-container { display: none; width: 60px; height: 60px; position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); animation: fadeIn 0.3s; margin-bottom: 5px;}
         .preview-thumb { width: 100%; height: 100%; object-fit: cover; }
         .remove-file-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -291,7 +293,7 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG (PASTE YOURS HERE) ---
+    // --- FIREBASE CONFIG (ADD YOURS HERE) ---
     const firebaseConfig = {
       apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
       authDomain: "osint-ai-eaf84.firebaseapp.com",
@@ -366,22 +368,21 @@
         const div = document.createElement('div');
         div.className = `message ${sender}`;
         
-        // --- LOGIC FOR SHOW THINKING ---
         let mainText = text;
         let thoughtHtml = '';
         
-        // Check for <think> tags and extract content
+        // --- PARSE "THINKING" TAGS ---
         const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
         if (thinkMatch) {
             const thinkingContent = thinkMatch[1].trim();
             mainText = text.replace(thinkMatch[0], '').trim();
             
-            // Create the Collapsible Widget
+            // Create the Gemini-Style Collapsible Widget
             thoughtHtml = `
             <div class="thinking-container">
                 <details class="thinking-details">
                     <summary>
-                        <span class="material-symbols-outlined thinking-icon">smart_toy</span>
+                        <span class="material-symbols-outlined thinking-icon" style="color:var(--accent-color)">auto_awesome</span>
                         Show thinking
                     </summary>
                     <div class="thinking-content">${thinkingContent}</div>
@@ -393,7 +394,7 @@
         let contentHtml = '';
         if (imageData) { contentHtml += `<img src="data:image/jpeg;base64,${imageData}" class="chat-image">`; }
         
-        // Render thinking widget FIRST, then the rest of the message
+        // Add Thinking Widget ABOVE the main text
         if (thoughtHtml) { contentHtml += thoughtHtml; }
         
         contentHtml += sender === 'bot' ? marked.parse(mainText) : mainText.replace(/\n/g, '<br>');
@@ -489,24 +490,13 @@
         const div = document.createElement('div');
         div.id = id;
         div.className = 'message bot';
-        div.innerHTML = `<div class="message-content">Analyzing...</div>`;
+        div.innerHTML = `<div class="message-content">Thinking...</div>`;
         document.getElementById('chat-container').appendChild(div);
         return id;
     }
 
     function toggleWelcome(show) { document.getElementById('welcome-screen').style.display = show ? 'block' : 'none'; document.getElementById('chat-container').style.display = show ? 'none' : 'flex'; if(show) currentSessionId = null; }
-    
-    function toggleSidebar() { 
-        const sb = document.getElementById('sidebar');
-        const overlay = document.getElementById('mobile-overlay');
-        if (window.innerWidth <= 768) {
-            sb.classList.toggle('active');
-            overlay.style.display = sb.classList.contains('active') ? 'block' : 'none';
-        } else {
-            sb.classList.toggle('collapsed');
-        }
-    }
-
+    function toggleSidebar() { const sb = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (window.innerWidth <= 768) { sb.classList.toggle('active'); overlay.style.display = sb.classList.contains('active') ? 'block' : 'none'; } else { sb.classList.toggle('collapsed'); } }
     function toggleSettingsMenu() { const menu = document.getElementById('settings-menu'); menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; }
     function toggleTheme() { const html = document.documentElement; const current = html.getAttribute('data-theme'); const next = current === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', next); localStorage.setItem('theme', next); }
     function openProfile() { document.getElementById('profile-modal').style.display = 'flex'; }
