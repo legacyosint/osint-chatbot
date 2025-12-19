@@ -296,6 +296,21 @@
         console.log("Attempting Google Login...");
         const provider = new firebase.auth.GoogleAuthProvider();
         
+        // Mobile-friendly auth method
+        auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+        }
+        
+        // Add this to your window.onload or outside any function to handle the return
+        auth.getRedirectResult().then((result) => {
+            if (result.user) {
+                console.log("User logged in via redirect");
+                // The existing onAuthStateChanged listener will handle the rest
+            }
+        }).catch((error) => {
+            console.error("Login Failed:", error.message);
+            alert("Login Error: " + error.message);
+        });
+        
         // Use Popup first (Best for Web/PWA)
         auth.signInWithPopup(provider)
             .then((result) => {
