@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>OSINT // ANALYZER</title>
     
-    <script src="[https://cdn.jsdelivr.net/npm/marked/marked.min.js](https://cdn.jsdelivr.net/npm/marked/marked.min.js)"></script>
-    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css)">
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js)"></script>
-    <link rel="stylesheet" href="[https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200](https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200)" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     
-    <script src="[https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js](https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js)"></script>
-    <script src="[https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js](https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js)"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     
     <style>
         /* --- THEME VARIABLES --- */
@@ -101,7 +101,7 @@
         .message.user .message-content { background: var(--user-bubble-bg); color: var(--user-bubble-text); border-radius: 18px 18px 4px 18px; }
         .message.bot .message-content { background: transparent; border: 1px solid var(--bot-bubble-border); color: var(--text-primary); border-radius: 12px; width: 100%; }
 
-        /* --- SHOW THINKING WIDGET --- */
+        /* --- THINKING WIDGET --- */
         .thinking-container { width: 100%; max-width: 100%; margin-bottom: 10px; }
         details.thinking-details { background: var(--think-bg); border: 1px solid var(--think-border); border-radius: 12px; overflow: hidden; transition: all 0.2s ease; }
         details.thinking-details summary { list-style: none; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; font-weight: 500; user-select: none; }
@@ -171,7 +171,7 @@
         <h1 style="color: var(--accent-color); letter-spacing: 2px;">OSINT ANALYZER</h1>
         <p style="color: #666; margin-bottom: 30px;">Secure Workspace</p>
         <button class="login-btn" onclick="loginWithGoogle()">
-            <img src="[https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg](https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg)" width="20"> Sign in with Google
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20"> Sign in with Google
         </button>
     </div>
 
@@ -204,7 +204,7 @@
                 <div class="settings-trigger" onclick="toggleSettingsMenu()"><span class="material-symbols-outlined">settings</span> <span>Settings</span></div>
                 <div id="settings-menu">
                     <div class="settings-item" onclick="toggleTheme()"><span class="material-symbols-outlined">contrast</span> Theme</div>
-                    <a href="[https://docs.google.com/forms/d/e/1FAIpQLScxln0wQ_S7q69WEbE1WtjB4-cYaNphpRki0sLVqyBip2W5qA/viewform](https://docs.google.com/forms/d/e/1FAIpQLScxln0wQ_S7q69WEbE1WtjB4-cYaNphpRki0sLVqyBip2W5qA/viewform)" target="_blank" class="settings-item" style="text-decoration:none;"><span class="material-symbols-outlined">chat_bubble</span> Feedback</a>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLScxln0wQ_S7q69WEbE1WtjB4-cYaNphpRki0sLVqyBip2W5qA/viewform" target="_blank" class="settings-item" style="text-decoration:none;"><span class="material-symbols-outlined">chat_bubble</span> Feedback</a>
                     <div class="settings-item" onclick="alert('Activity feature coming soon.')"><span class="material-symbols-outlined">history</span> Activity</div>
                     <div style="height:1px; background:var(--border-color); margin: 5px 0;"></div>
                     <div class="settings-item danger" onclick="logout()"><span class="material-symbols-outlined">logout</span> Sign Out</div>
@@ -262,7 +262,7 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG (ADD YOURS HERE) ---
+    // --- FIREBASE CONFIG (RESTORED) ---
     const firebaseConfig = {
       apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
       authDomain: "osint-ai-eaf84.firebaseapp.com",
@@ -285,7 +285,7 @@
             document.getElementById('app-content').style.filter = 'none';
             document.getElementById('app-content').style.pointerEvents = 'all';
             document.getElementById('header-name').innerText = currentUserName;
-            const photo = user.photoURL || '[https://www.gravatar.com/avatar/?d=mp](https://www.gravatar.com/avatar/?d=mp)';
+            const photo = user.photoURL || 'https://www.gravatar.com/avatar/?d=mp';
             document.getElementById('header-img').src = photo;
             document.getElementById('welcome-user-name').innerText = currentUserName.split(' ')[0];
             document.getElementById('modal-name').innerText = currentUserName;
