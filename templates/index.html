@@ -295,31 +295,16 @@
     function loginWithGoogle() {
         console.log("Attempting Google Login...");
         const provider = new firebase.auth.GoogleAuthProvider();
-        
-        // Mobile-friendly auth method
-        auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
-        }
-        
-        // Add this to your window.onload or outside any function to handle the return
-        auth.getRedirectResult().then((result) => {
-            if (result.user) {
-                console.log("User logged in via redirect");
-                // The existing onAuthStateChanged listener will handle the rest
-            }
-        }).catch((error) => {
-            console.error("Login Failed:", error.message);
-            alert("Login Error: " + error.message);
-        });
-        
+
         // Use Popup first (Best for Web/PWA)
         auth.signInWithPopup(provider)
             .then((result) => {
                 console.log("Login success:", result.user.email);
-                // UI updates happen in onAuthStateChanged
+                // The onAuthStateChanged listener handles the UI updates
             })
             .catch((error) => {
                 console.error("Popup Failed:", error);
-                
+
                 // ONLY fallback to redirect if popup is strictly blocked
                 if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
                     auth.signInWithRedirect(provider);
@@ -329,7 +314,8 @@
             });
     }
 
-    // Handle Redirect Result (Only runs if fallback was used)
+    // --- HANDLE REDIRECT RESULT ---
+    // This runs automatically on page load to catch users returning from a Redirect login
     auth.getRedirectResult()
         .then((result) => {
             if (result.user) console.log("Recovered from redirect login");
@@ -338,30 +324,31 @@
             console.error("Redirect Verify Error:", error);
         });
 
-    // Monitor Auth State
+    // --- MONITOR AUTH STATE ---
+    // This triggers whenever the user logs in (via Popup OR Redirect)
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             console.log("User detected:", user.email);
             currentUserToken = await user.getIdToken();
             currentUserName = user.displayName || "Agent";
-            
+
             // Update UI
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('app-content').style.filter = 'none';
             document.getElementById('app-content').style.pointerEvents = 'all';
-            
+
             // Set Headers
             document.getElementById('header-name').innerText = currentUserName;
             const photo = user.photoURL || 'https://www.gravatar.com/avatar/?d=mp';
             document.getElementById('header-img').src = photo;
             document.getElementById('welcome-user-name').innerText = currentUserName.split(' ')[0];
-            
+
             // Set Profile Modal Data
             document.getElementById('modal-name').innerText = currentUserName;
             document.getElementById('modal-email').innerText = user.email;
             document.getElementById('modal-img').src = photo;
             document.getElementById('modal-joined').innerText = new Date(user.metadata.creationTime).toLocaleDateString();
-            
+
             // Load Chats
             loadSessions();
         } else {
