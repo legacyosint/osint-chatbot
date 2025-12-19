@@ -125,7 +125,7 @@
         details.thinking-details summary::-webkit-details-marker { display: none; }
         details.thinking-details summary:hover { color: var(--text-primary); background: var(--bg-hover); }
         
-        /* The Robot Icon in the Summary */
+        /* Robot Icon */
         .thinking-icon { color: var(--accent-color); font-size: 18px; }
         
         .thinking-content {
@@ -291,7 +291,7 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
+    // --- FIREBASE CONFIG (PASTE YOURS HERE) ---
     const firebaseConfig = {
       apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
       authDomain: "osint-ai-eaf84.firebaseapp.com",
@@ -370,7 +370,7 @@
         let mainText = text;
         let thoughtHtml = '';
         
-        // Check for <think> tags
+        // Check for <think> tags and extract content
         const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
         if (thinkMatch) {
             const thinkingContent = thinkMatch[1].trim();
@@ -393,7 +393,7 @@
         let contentHtml = '';
         if (imageData) { contentHtml += `<img src="data:image/jpeg;base64,${imageData}" class="chat-image">`; }
         
-        // Render thinking widget FIRST, then the rest
+        // Render thinking widget FIRST, then the rest of the message
         if (thoughtHtml) { contentHtml += thoughtHtml; }
         
         contentHtml += sender === 'bot' ? marked.parse(mainText) : mainText.replace(/\n/g, '<br>');
