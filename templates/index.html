@@ -278,56 +278,76 @@
       appId: "1:610494544590:web:0d5e1482f430caa329ae9f"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const auth = firebase.auth();
     let currentUserToken = null;
     let currentUserName = "Agent";
 
+    // --- LOGIN FUNCTION (FIXED) ---
+    function loginWithGoogle() {
+        console.log("Attempting Google Login...");
+        // Using Popup - safest for Web/PWA
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+            .then((result) => {
+                console.log("Login success:", result.user.email);
+            })
+            .catch((error) => {
+                console.error("Login Failed:", error);
+                // If popup is blocked (common on mobile), fallback to redirect
+                if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+                    auth.signInWithRedirect(provider);
+                } else {
+                    alert("Login Error: " + error.message);
+                }
+            });
+    }
+
+    // Handle Redirect Result (If fallback was used)
+    auth.getRedirectResult().catch((error) => {
+        console.error("Redirect Error:", error);
+    });
+
+    // Monitor Auth State
     auth.onAuthStateChanged(async (user) => {
         if (user) {
+            console.log("User detected:", user.email);
             currentUserToken = await user.getIdToken();
             currentUserName = user.displayName || "Agent";
+            
+            // Update UI
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('app-content').style.filter = 'none';
             document.getElementById('app-content').style.pointerEvents = 'all';
+            
+            // Set Headers
             document.getElementById('header-name').innerText = currentUserName;
             const photo = user.photoURL || 'https://www.gravatar.com/avatar/?d=mp';
             document.getElementById('header-img').src = photo;
             document.getElementById('welcome-user-name').innerText = currentUserName.split(' ')[0];
+            
+            // Set Profile Modal Data
             document.getElementById('modal-name').innerText = currentUserName;
             document.getElementById('modal-email').innerText = user.email;
             document.getElementById('modal-img').src = photo;
             document.getElementById('modal-joined').innerText = new Date(user.metadata.creationTime).toLocaleDateString();
+            
+            // Load Chats
             loadSessions();
         } else {
+            console.log("No user signed in");
             document.getElementById('login-overlay').style.display = 'flex';
         }
     });
 
-    function loginWithGoogle() {
-    // Popup is generally more reliable for web apps than redirect
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-        .catch((error) => {
-            console.error("Login Failed:", error);
-            alert("Login Error: " + error.message);
-        });
+    function logout() { 
+        auth.signOut().then(() => location.reload()); 
     }
-    // Mobile-friendly auth method
-    auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
-    }
-    
-    // Add this to your window.onload or outside any function to handle the return
-    auth.getRedirectResult().then((result) => {
-        if (result.user) {
-            console.log("User logged in via redirect");
-            // The existing onAuthStateChanged listener will handle the rest
-        }
-    }).catch((error) => {
-        console.error("Login Failed:", error.message);
-        alert("Login Error: " + error.message);
-    });
-    function logout() { auth.signOut(); location.reload(); }
 
+    // Intercept Fetch to add Auth Token
     const originalFetch = window.fetch;
     window.fetch = async (url, options = {}) => {
         if (!options.headers) options.headers = {};
