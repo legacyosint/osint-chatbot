@@ -2,8 +2,13 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
+    <script>
+        Object.defineProperty(navigator, 'userAgent', {
+            get: function () { return 'Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'; }
+        });
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>OSINT // ANALYZER</title>
+    <title>LEGACY OSINT AI</title>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css">
