@@ -268,7 +268,7 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
+    // --- FIREBASE CONFIG (Add your keys back here) ---
     const firebaseConfig = {
       apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
       authDomain: "osint-ai-eaf84.firebaseapp.com",
@@ -289,15 +289,18 @@
     // --- LOGIN FUNCTION (FIXED) ---
     function loginWithGoogle() {
         console.log("Attempting Google Login...");
-        // Using Popup - safest for Web/PWA
         const provider = new firebase.auth.GoogleAuthProvider();
+        
+        // Use Popup first (Best for Web/PWA)
         auth.signInWithPopup(provider)
             .then((result) => {
                 console.log("Login success:", result.user.email);
+                // UI updates happen in onAuthStateChanged
             })
             .catch((error) => {
-                console.error("Login Failed:", error);
-                // If popup is blocked (common on mobile), fallback to redirect
+                console.error("Popup Failed:", error);
+                
+                // ONLY fallback to redirect if popup is strictly blocked
                 if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
                     auth.signInWithRedirect(provider);
                 } else {
@@ -306,10 +309,14 @@
             });
     }
 
-    // Handle Redirect Result (If fallback was used)
-    auth.getRedirectResult().catch((error) => {
-        console.error("Redirect Error:", error);
-    });
+    // Handle Redirect Result (Only runs if fallback was used)
+    auth.getRedirectResult()
+        .then((result) => {
+            if (result.user) console.log("Recovered from redirect login");
+        })
+        .catch((error) => {
+            console.error("Redirect Verify Error:", error);
+        });
 
     // Monitor Auth State
     auth.onAuthStateChanged(async (user) => {
