@@ -68,8 +68,7 @@ def get_long_term_memory(user_id):
 def update_long_term_memory(user_id, last_message, last_reply):
     try:
         current_memory = get_long_term_memory(user_id)
-        # Simplified memory update to save tokens
-        update_prompt = f"Update user dossier based on: User said '{last_message}', AI replied '{last_reply}'. Current Dossier: {current_memory}. Keep it brief."
+        update_prompt = f"User Dossier: {current_memory}\nLatest Interaction:\nUser: {last_message}\nAI: {last_reply}\nTask: Update the dossier with new consistent facts or preferences. Keep it concise."
         resp = client.models.generate_content(model="gemini-2.0-flash", contents=update_prompt)
         new_memory = resp.text.strip()
         conn = get_db_connection()
@@ -153,8 +152,7 @@ def chat():
 
         user_profile = get_long_term_memory(user_id)
         
-        # --- SYSTEM PROMPT FIX ---
-        # Explicitly tells AI NOT to wrap the whole response in code blocks
+        # --- SYSTEM PROMPT (STRICT FORMATTING) ---
         system_instruction = f"""
         You are 'OSINT-MIND', a senior cyber-intelligence analyst.
         USER DOSSIER: {user_profile}
@@ -165,9 +163,9 @@ def chat():
            - For simple greetings ("hi"), skip the <think> block.
         
         2. FORMATTING RULES (CRITICAL):
-           - Write your final answer in PLAIN TEXT or Markdown.
-           - **NEVER** wrap the entire response in a code block (```).
-           - Only use code blocks (```python) for actual code snippets.
+           - Write your actual answer in **PLAIN TEXT** or standard Markdown (bold, lists, etc).
+           - **NEVER** wrap the entire response in a code block (``` or ```markdown). 
+           - **ONLY** use code blocks (```python) when you are providing actual Python code snippets.
            - Provide clickable links for maps or profiles.
         """
 
@@ -179,7 +177,7 @@ def chat():
             parts = []
             if msg: parts.append(types.Part.from_text(text=msg))
             
-            # SAFE IMAGE LOADING
+            # SAFE IMAGE LOADING (Prevents Crash)
             if has_img and img_data:
                 try:
                     if len(img_data) > 100: 
