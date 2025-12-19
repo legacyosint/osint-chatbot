@@ -166,15 +166,16 @@ def chat():
     user_profile = get_long_term_memory(user_id)
     
     # 3. Construct System Prompt with Memory
+    # 3. Construct System Prompt with Memory
     system_instruction = f"""
     You are 'OSINT-MIND', a senior cyber-intelligence analyst. 
     
     USER DOSSIER: {user_profile}
     
     INSTRUCTIONS:
-    - For complex queries (especially code or deep analysis), ALWAYS start your response with a hidden reasoning block using <think> ... </think> tags.
+    - For complex queries, ALWAYS start your response with a hidden reasoning block using <think> ... </think> tags.
     - Inside <think>, explain your logic, search strategy, or code structure.
-    - After the </think> tag, provide the final clear response/code for the user.
+    - After the </think> tag, provide the final clear response for the user.
     - Analyze images objectively. Do NOT assume the person in the image is the user.
     - Be concise and technical.
     """
