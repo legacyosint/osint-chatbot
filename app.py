@@ -68,7 +68,8 @@ def get_long_term_memory(user_id):
 def update_long_term_memory(user_id, last_message, last_reply):
     try:
         current_memory = get_long_term_memory(user_id)
-        update_prompt = f"User Dossier: {current_memory}\nLatest Interaction:\nUser: {last_message}\nAI: {last_reply}\nTask: Update the dossier with new consistent facts or preferences. Keep it concise."
+        # Simplified memory update to save tokens
+        update_prompt = f"Update user dossier based on: User said '{last_message}', AI replied '{last_reply}'. Current Dossier: {current_memory}. Keep it brief."
         resp = client.models.generate_content(model="gemini-2.0-flash", contents=update_prompt)
         new_memory = resp.text.strip()
         conn = get_db_connection()
@@ -146,30 +147,28 @@ def chat():
         conn = get_db_connection()
         c = conn.cursor()
         
-        # 1. Fetch History (Safely)
+        # 1. Fetch History
         c.execute("SELECT sender, content, has_image, image_data FROM messages WHERE session_id = %s ORDER BY id DESC LIMIT 5", (session_id,))
         history = c.fetchall()[::-1]
 
         user_profile = get_long_term_memory(user_id)
         
-        # SYSTEM PROMPT (FIXED: Explicitly prevents formatting the final answer as a code block)
+        # --- SYSTEM PROMPT FIX ---
+        # Explicitly tells AI NOT to wrap the whole response in code blocks
         system_instruction = f"""
         You are 'OSINT-MIND', a senior cyber-intelligence analyst.
         USER DOSSIER: {user_profile}
         
         INSTRUCTIONS:
         1. THOUGHT PROCESS:
-           - For analysis or reasoning, start with a hidden block: <think> [Your reasoning here] </think>.
+           - For complex queries, start with a hidden block: <think> [Reasoning/Plan] </think>.
+           - For simple greetings ("hi"), skip the <think> block.
         
-        2. FINAL RESPONSE FORMAT:
-           - Your actual answer to the user comes AFTER the </think> tag.
-           - Write in **PLAIN TEXT** or standard Markdown.
-           - **DO NOT** wrap your entire response in a code block (```).
+        2. FORMATTING RULES (CRITICAL):
+           - Write your final answer in PLAIN TEXT or Markdown.
+           - **NEVER** wrap the entire response in a code block (```).
            - Only use code blocks (```python) for actual code snippets.
-           - If finding a location or profile, provide direct links.
-        
-        3. IMAGE ANALYSIS:
-           - Analyze images objectively based ONLY on visual evidence.
+           - Provide clickable links for maps or profiles.
         """
 
         contents = []
@@ -180,10 +179,10 @@ def chat():
             parts = []
             if msg: parts.append(types.Part.from_text(text=msg))
             
-            # SAFE IMAGE LOADING (Prevents JSON Error)
+            # SAFE IMAGE LOADING
             if has_img and img_data:
                 try:
-                    if len(img_data) > 100: # Check if valid base64
+                    if len(img_data) > 100: 
                         image_bytes = base64.b64decode(img_data)
                         parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
                 except Exception as e:
@@ -204,14 +203,13 @@ def chat():
                 img.save(buf, format='JPEG')
                 image_bytes = buf.getvalue()
                 
-                # Check size to ensure we don't send empty data
+                # CRITICAL FIX: Ensure we don't send empty bytes to Gemini
                 if len(image_bytes) > 0:
                     current_parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
                     image_b64 = base64.b64encode(image_bytes).decode('utf-8')
             except Exception as e:
-                print(f"Current Image Error: {e}")
-                # Proceed without image instead of crashing
-                pass
+                print(f"Image Error: {e}")
+                pass # Continue without image if it fails
 
         if current_parts:
             contents.append(types.Content(role="user", parts=current_parts))
