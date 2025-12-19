@@ -305,6 +305,13 @@
     });
 
     function loginWithGoogle() {
+    // Popup is generally more reliable for web apps than redirect
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+        .catch((error) => {
+            console.error("Login Failed:", error);
+            alert("Login Error: " + error.message);
+        });
+    }
     // Mobile-friendly auth method
     auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
     }
