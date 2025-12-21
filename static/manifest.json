@@ -20,6 +20,38 @@
       "purpose": "any maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "https://osint-chatbot.onrender.com/static/screenshots/legacyosint-loginpage.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://osint-chatbot.onrender.com/static/screenshots/Legacyosint-afterlogin.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://osint-chatbot.onrender.com/static/screenshots/Legacyosint-chatstructure.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://osint-chatbot.onrender.com/static/screenshots/Legacyosint-sidebarchats.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://osint-chatbot.onrender.com/static/screenshots/Legacyosint-osinttrial.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "form_factor": "narrow"
+    }
+  ],
   "id": "https://osint-chatbot.onrender.com",
   "description": "An AI-powered OSINT assistant for cyber security researchers. Features image recognition, website scraping, and intelligent threat analysis tools.",
   "dir": "ltr",
