@@ -17,5 +17,10 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "id": "/",
+  "description": "An AI-powered OSINT assistant for cyber security researchers. Features image recognition, website scraping, and intelligent threat analysis tools.",
+  "dir": "ltr",
+  "scope": "/",
+  "lang": "en"
 }
