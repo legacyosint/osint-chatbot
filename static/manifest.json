@@ -8,13 +8,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/4712/4712035.png",
+      "src": "https://osint-chatbot.onrender.com/static/legacyosint.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "id": "/",
+  "id": "https://osint-chatbot.onrender.com",
   "description": "An AI-powered OSINT assistant for cyber security researchers. Features image recognition, website scraping, and intelligent threat analysis tools.",
   "dir": "ltr",
   "scope": "/",
