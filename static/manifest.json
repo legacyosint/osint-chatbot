@@ -8,7 +8,7 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/static/legacyosint.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/4712/4712035.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
