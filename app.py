@@ -3,7 +3,7 @@ import json
 import psycopg2
 import base64
 import threading
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from google import genai
 from google.genai import types
@@ -247,6 +247,14 @@ def chat():
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
         return jsonify({"error": str(e)}), 500
+
+# --- ANDROID APP VERIFICATION ---
+@app.route('/.well-known/assetlinks.json')
+def assetlinks():
+    # This serves the file from the root directory
+    return send_from_directory('.', 'assetlinks.json')
+
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
