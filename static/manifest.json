@@ -23,31 +23,31 @@
   "screenshots": [
     {
       "src": "https://osint-chatbot.onrender.com/static/screenshots/legacyosint-loginpage.jpg",
-      "sizes": "1080x1920",
+      "sizes": "1080x2221",
       "type": "image/jpeg",
       "form_factor": "narrow"
     },
     {
       "src": "https://osint-chatbot.onrender.com/static/screenshots/Legacyosint-afterlogin.jpg",
-      "sizes": "1080x1920",
+      "sizes": "1080x2221",
       "type": "image/jpeg",
       "form_factor": "narrow"
     },
     {
       "src": "https://osint-chatbot.onrender.com/static/screenshots/Legacyosint-chatstructure.jpg",
-      "sizes": "1080x1920",
+      "sizes": "1080x2221",
       "type": "image/jpeg",
       "form_factor": "narrow"
     },
     {
       "src": "https://osint-chatbot.onrender.com/static/screenshots/Legacyosint-sidebarchats.jpg",
-      "sizes": "1080x1920",
+      "sizes": "1080x2221",
       "type": "image/jpeg",
       "form_factor": "narrow"
     },
     {
       "src": "https://osint-chatbot.onrender.com/static/screenshots/Legacyosint-osinttrial.jpg",
-      "sizes": "1080x1920",
+      "sizes": "1080x2221",
       "type": "image/jpeg",
       "form_factor": "narrow"
     }
