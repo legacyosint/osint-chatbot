@@ -253,8 +253,14 @@ def chat():
 def assetlinks():
     # This serves the file from the root directory
     return send_from_directory('.', 'assetlinks.json')
-
-
+    
+# --- SERVICE WORKER ---
+@app.route('/sw.js')
+def service_worker():
+    from flask import make_response
+    response = make_response(send_from_directory('.', 'sw.js'))
+    response.headers['Content-Type'] = 'application/javascript'
+    return response
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
