@@ -253,6 +253,10 @@ def chat():
 def assetlinks():
     # This serves the file from the root directory
     return send_from_directory('.', 'assetlinks.json')
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
     
 # --- SERVICE WORKER ---
 @app.route('/sw.js')
