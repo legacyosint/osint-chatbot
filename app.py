@@ -257,6 +257,19 @@ def assetlinks():
 @app.route('/privacy')
 def privacy():
     return render_template('privacy.html')
+
+# --- LEGAL & SUPPORT PAGES ---
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
+
+@app.route('/refund-policy')
+def refund_policy():
+    return render_template('refund_policy.html')
+
+@app.route('/support')
+def support():
+    return render_template('support.html')
     
 # --- SERVICE WORKER ---
 @app.route('/sw.js')
