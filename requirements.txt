@@ -6,3 +6,4 @@ python-dotenv
 gunicorn
 psycopg2-binary
 firebase-admin
+razorpay
