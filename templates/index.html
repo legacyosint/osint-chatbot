@@ -433,6 +433,7 @@
             console.log("User detected:", user.email);
             currentUserToken = await user.getIdToken();
             currentUserName = user.displayName || "Agent";
+            
 
             // Update UI
             document.getElementById('login-overlay').style.display = 'none';
@@ -450,7 +451,27 @@
             document.getElementById('modal-email').innerText = user.email;
             document.getElementById('modal-img').src = photo;
             document.getElementById('modal-joined').innerText = new Date(user.metadata.creationTime).toLocaleDateString();
-
+    
+            // CHECK PRO STATUS
+            fetch('/api/get_pro_status', {
+                headers: { 'Authorization': 'Bearer ' + currentUserToken }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.is_pro) {
+                    // Add badge to header name
+                    const badge = ' <span style="background:#00ff41; color:black; font-size:0.7rem; padding:2px 6px; border-radius:4px; font-weight:bold; vertical-align:middle;">PRO</span>';
+                    document.getElementById('header-name').innerHTML += badge;
+                    
+                    // Add badge to profile modal name
+                    document.getElementById('modal-name').innerHTML += badge;
+                    
+                    // Hide the "Upgrade" button in sidebar since they already have it
+                    const upgradeBtn = document.querySelector('.pro-watermark-btn');
+                    if(upgradeBtn) upgradeBtn.style.display = 'none';
+                }
+            });
+            
             // Load Chats
             loadSessions();
         } else {
