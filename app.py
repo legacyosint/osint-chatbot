@@ -430,6 +430,13 @@ def get_pro_status():
     is_pro = row[0] if row else False
     return jsonify({"is_pro": is_pro})
 
+@app.route('/manifest.json')
+def manifest():
+    from flask import make_response
+    response = make_response(send_from_directory('.', 'manifest.json'))
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
 # --- ANDROID APP VERIFICATION ---
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
