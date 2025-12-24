@@ -4,6 +4,7 @@ import psycopg2
 import base64
 import threading
 import time
+from datetime import datetime, date # Add 'date' here
 from flask import Flask, render_template, request, redirect, jsonify, send_from_directory, make_response
 import razorpay
 from flask_cors import CORS
@@ -59,6 +60,15 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS sessions (id SERIAL PRIMARY KEY, user_id TEXT, title TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     c.execute('''CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, sender TEXT, content TEXT, has_image BOOLEAN, image_data TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     c.execute('''CREATE TABLE IF NOT EXISTS user_profiles (user_id TEXT PRIMARY KEY, profile_data TEXT, last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+
+    # --- NEW COLUMNS FOR LIMITS ---
+    # We use ALTER TABLE to add them safely to your existing database
+    try:
+        c.execute("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS is_pro BOOLEAN DEFAULT FALSE")
+        c.execute("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS daily_image_count INTEGER DEFAULT 0")
+        c.execute("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS last_image_date DATE DEFAULT CURRENT_DATE")
+    except Exception as e:
+        print(f"Table update error (might already exist): {e}")
     conn.commit()
     c.close()
     conn.close()
@@ -96,6 +106,58 @@ def verify_user(req):
         return auth.verify_id_token(auth_header.split("Bearer ")[1])['uid']
     except: return None
 
+def check_and_update_limits(user_id, is_image_upload=False):
+    """
+    Returns True if allowed, False if limit reached.
+    Automatically resets counts if it's a new day.
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # 1. Get current stats
+    c.execute("SELECT is_pro, daily_image_count, last_image_date FROM user_profiles WHERE user_id = %s", (user_id,))
+    row = c.fetchone()
+    
+    # If user doesn't exist in profile table yet, create them
+    if not row:
+        c.execute("INSERT INTO user_profiles (user_id, is_pro, daily_image_count, last_image_date) VALUES (%s, FALSE, 0, CURRENT_DATE)", (user_id,))
+        conn.commit()
+        is_pro, count, last_date = False, 0, datetime.now().date()
+    else:
+        is_pro, count, last_date = row
+        # Ensure last_date is a python date object
+        if isinstance(last_date, str): 
+            last_date = datetime.strptime(last_date, "%Y-%m-%d").date()
+
+    # 2. PRO USERS: No limits
+    if is_pro:
+        c.close()
+        conn.close()
+        return True, "pro"
+
+    # 3. FREE USERS: Check Reset
+    today = datetime.now().date()
+    if last_date < today:
+        # It's a new day, reset count
+        count = 0
+        c.execute("UPDATE user_profiles SET daily_image_count = 0, last_image_date = %s WHERE user_id = %s", (today, user_id))
+        conn.commit()
+
+    # 4. Check Limit (Only if uploading an image)
+    if is_image_upload:
+        if count >= 5: # LIMIT IS 5
+            c.close()
+            conn.close()
+            return False, "limit_reached"
+        
+        # Increment count
+        c.execute("UPDATE user_profiles SET daily_image_count = daily_image_count + 1 WHERE user_id = %s", (user_id,))
+        conn.commit()
+
+    c.close()
+    conn.close()
+    return True, "free"
+    
 # --- ROUTES ---
 @app.route('/')
 def home(): return render_template('index.html')
@@ -195,6 +257,16 @@ def chat():
         session_id = request.form.get('session_id')
         user_text = request.form.get('message', '')
         image_file = request.files.get('image')
+
+        # --- NEW: CHECK LIMITS ---
+        has_image = True if image_file else False
+        allowed, status = check_and_update_limits(user_id, is_image_upload=has_image)
+        
+        if not allowed:
+            # If limit reached, return a specific error
+            return jsonify({
+                "reply": "⚠️ **DAILY LIMIT REACHED**\n\nYou have used your 5 free image uploads for today.\n\n[UPGRADE TO PRO](/create-checkout-session) for unlimited access."
+            })
 
         conn = get_db_connection()
         c = conn.cursor()
@@ -298,6 +370,23 @@ def chat():
     except Exception as e:
         print(f"CRITICAL ERROR: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/activate_pro', methods=['POST'])
+def activate_pro():
+    user_id = verify_user(request)
+    if not user_id: return jsonify({"error": "Unauthorized"}), 401
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    # Turn on Pro Status
+    c.execute("""
+        INSERT INTO user_profiles (user_id, is_pro) VALUES (%s, TRUE) 
+        ON CONFLICT (user_id) DO UPDATE SET is_pro = TRUE
+    """, (user_id,))
+    conn.commit()
+    c.close()
+    conn.close()
+    return jsonify({"status": "upgraded"})
 
 # --- ANDROID APP VERIFICATION ---
 @app.route('/.well-known/assetlinks.json')
