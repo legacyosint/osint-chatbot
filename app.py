@@ -165,22 +165,28 @@ def home(): return render_template('index.html')
 # --- CHECKOUT ROUTE (Razorpay) ---
 @app.route('/create-checkout-session')
 def create_checkout_session():
+    # 1. Get the plan type from the URL (default to monthly)
+    plan_type = request.args.get('plan', 'monthly')
+    
+    # 2. Set price based on plan
+    if plan_type == 'yearly':
+        amount = 6000  # $60.00
+        desc = "Legacy Pro (Yearly)"
+    else:
+        amount = 500   # $5.00
+        desc = "Legacy Pro (Monthly)"
+
     try:
-        # Create a "Payment Link"
         payment_link_data = {
-            "amount": 500,  # 500 cents = $5.00 USD
+            "amount": amount,
             "currency": "USD",
             "accept_partial": False,
-            "description": "Legacy OSINT Pro Upgrade",
+            "description": desc,
             "customer": {
-                "name": "Agent", 
-                "email": "user@example.com" # You can update this later to capture real email
+                "name": "Agent",
+                "email": "user@example.com"
             },
-            "notify": {
-                "sms": False,
-                "email": True
-            },
-            "reminder_enable": False,
+            "notify": {"sms": False, "email": True},
             "callback_url": DOMAIN + "/success",
             "callback_method": "get"
         }
@@ -190,7 +196,6 @@ def create_checkout_session():
 
     except Exception as e:
         return jsonify(error=str(e)), 403
-
 # --- SUCCESS ROUTE ---
 @app.route('/success')
 def success():
