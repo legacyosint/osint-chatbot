@@ -291,7 +291,7 @@ def chat():
         if not allowed:
             # If limit reached, return a specific error
             return jsonify({
-                "reply": "⚠️ **DAILY LIMIT REACHED**\n\nYou have used your 5 free image uploads for today.\n\n[UPGRADE TO PRO](/create-checkout-session) for unlimited access."
+                "reply": "⚠️ **DAILY LIMIT REACHED**\nYou have used your 5 free image uploads for today.[UPGRADE TO PRO](/create-checkout-session) for unlimited access."
             })
 
         conn = get_db_connection()
