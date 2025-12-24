@@ -3,9 +3,11 @@ import json
 import psycopg2
 import base64
 import threading
-import razorpay
 import time
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, jsonify, send_from_directory
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+import razorpay
+import os
 from flask_cors import CORS
 from google import genai
 from google.genai import types
@@ -329,6 +331,12 @@ def refund_policy():
 @app.route('/support')
 def support():
     return render_template('support.html')
+
+# This function ONLY runs when someone visits '/create-checkout-session'
+@app.route('/create-checkout-session')
+@login_required 
+def create_checkout_session():
+    # ... Razorpay logic starts here ...
     
 # --- SERVICE WORKER ---
 @app.route('/sw.js')
