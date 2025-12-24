@@ -1,9 +1,9 @@
-flask
-flask-cors
-google-genai
-pillow
-python-dotenv
+Flask
 gunicorn
 psycopg2-binary
+google-genai
+Pillow
 firebase-admin
+flask-cors
+Flask-Login
 razorpay
