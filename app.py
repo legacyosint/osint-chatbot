@@ -205,6 +205,27 @@ def success():
     else:
         return "Payment Failed or Cancelled", 400
 
+# --- CANCEL SUBSCRIPTION ENDPOINT ---
+@app.route('/api/cancel_subscription', methods=['POST'])
+def cancel_subscription():
+    user_id = verify_user(request)
+    if not user_id: return jsonify({"error": "Unauthorized"}), 401
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    try:
+        # Set is_pro to FALSE
+        c.execute("UPDATE user_profiles SET is_pro = FALSE WHERE user_id = %s", (user_id,))
+        conn.commit()
+        status = "cancelled"
+    except Exception as e:
+        print(f"Cancel Error: {e}")
+        status = "error"
+    
+    c.close()
+    conn.close()
+    return jsonify({"status": status})
+
 @app.route('/sessions', methods=['GET', 'POST'])
 def handle_sessions():
     user_id = verify_user(request)
