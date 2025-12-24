@@ -42,6 +42,7 @@
             --bot-bubble-border: #00ff9d;
             --think-bg: #111;
             --think-border: #333;
+            --neon-green: #00ff41;
         }
 
         :root[data-theme="light"] {
@@ -174,6 +175,106 @@
         .modal-card { background: var(--bg-dropdown); border: 1px solid var(--border-color); width: 90%; max-width: 350px; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); text-align: center; position: relative; }
         .modal-close { position: absolute; top: 15px; right: 15px; cursor: pointer; color: var(--text-secondary); }
         .profile-large-img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px; border: 2px solid var(--accent-color); }
+        .pro-watermark-btn { margin: 10px 15px; padding: 10px; background: rgba(0, 255, 65, 0.05); border: 1px solid var(--neon-green); color: var(--neon-green); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-family: monospace; letter-spacing: 1px; transition: all 0.3s ease; text-transform: uppercase; box-shadow: 0 0 5px rgba(0, 255, 65, 0.1); }
+        .pro-watermark-btn:hover { background: var(--neon-green); color: black; box-shadow: 0 0 20px rgba(0, 255, 65, 0.4); }
+        #pro-modal-overlay { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); backdrop-filter: blur(8px); justify-content: center; align-items: center; animation: fadeIn 0.3s; }
+        .pro-card-box {
+            background: #000;
+            border: 2px solid var(--neon-green);
+            width: 90%;
+            max-width: 400px;
+            padding: 2px; /* Creates the double border effect */
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.15);
+        }
+        .pro-card-inner {
+            border: 1px solid var(--neon-green);
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        .corner-accent {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--neon-green);
+            z-index: 2;
+        }
+        .tl { top: 0; left: 0; }
+        .tr { top: 0; right: 0; }
+        .bl { bottom: 0; left: 0; }
+        .br { bottom: 0; right: 0; }
+        
+        .pro-title {
+            color: var(--neon-green);
+            font-family: monospace;
+            font-size: 2rem;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+            letter-spacing: -1px;
+        }
+        
+        .pro-price {
+            color: white;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+        
+        .pro-price span {
+            font-size: 1rem;
+            color: #888;
+            font-weight: normal;
+        }
+        
+        .pro-features {
+            text-align: left;
+            margin: 20px 0;
+            color: #ccc;
+            font-family: monospace;
+            list-style: none;
+            padding: 0;
+        }
+        .pro-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .check-icon { color: var(--neon-green); font-weight: bold; }
+        .go-pro-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: var(--neon-green);
+            color: black;
+            font-weight: 900;
+            font-size: 1.1rem;
+            border: none;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        .go-pro-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px var(--neon-green);
+        }
+        
+        .close-pro {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #555;
+            cursor: pointer;
+            font-size: 24px;
+            transition: color 0.2s;
+        }
+        .close-pro:hover { color: var(--neon-green); }
     </style>
 </head>
 <body>
@@ -212,6 +313,7 @@
             </div>
             <div id="history-list"></div>
             <div class="sidebar-footer">
+                <div class="pro-watermark-btn" onclick="openProModal()" style="margin: 10px 0; padding: 10px; border: 1px solid #00ff41; color: #00ff41; border-radius: 8px; cursor: pointer; text-align: center; font-weight: bold; font-family: monospace;">✨ PRO STATUS</div>
                 <div class="settings-trigger" onclick="toggleSettingsMenu()"><span class="material-symbols-outlined">settings</span> <span>Settings</span></div>
                 <div id="settings-menu">
                     <div class="settings-item" onclick="toggleTheme()"><span class="material-symbols-outlined">contrast</span> Theme</div>
@@ -559,5 +661,55 @@
   }
 </script>
 
+<div id="pro-modal-overlay" onclick="closeProModal(event)">
+    <div class="pro-card-box">
+        <div class="corner-accent tl"></div>
+        <div class="corner-accent tr"></div>
+        <div class="corner-accent bl"></div>
+        <div class="corner-accent br"></div>
+        
+        <div class="pro-card-inner">
+            <span class="close-pro" onclick="document.getElementById('pro-modal-overlay').style.display='none'">&times;</span>
+            
+            <h2 class="pro-title">LEGACY // PRO</h2>
+            <p style="color: #666; font-family: monospace; font-size: 0.8rem; margin-top: 5px;">SYSTEM UPGRADE AVAILABLE</p>
+            
+            <div class="pro-price">
+                $5<span>/mo</span>
+            </div>
+
+            <ul class="pro-features">
+                <li><span class="check-icon">>></span> Unlimited Intelligence Uploads</li>
+                <li><span class="check-icon">>></span> Priority Neural Processing</li>
+                <li><span class="check-icon">>></span> Deep Web Scraper Access</li>
+                <li><span class="check-icon">>></span> Support Development</li>
+            </ul>
+
+            <a href="/create-checkout-session" class="go-pro-btn">
+                INITIATE UPGRADE
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openProModal() {
+        document.getElementById('pro-modal-overlay').style.display = 'flex';
+        // Close sidebar on mobile if open
+        if(window.innerWidth <= 768) {
+            const sb = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            if(sb) sb.classList.remove('active');
+            if(overlay) overlay.style.display = 'none';
+        }
+    }
+
+    function closeProModal(e) {
+        // Only close if clicking the dark background (overlay), not the card itself
+        if (e.target.id === 'pro-modal-overlay') {
+            document.getElementById('pro-modal-overlay').style.display = 'none';
+        }
+    }
+</script>
 </body>
 </html>
