@@ -388,6 +388,22 @@ def activate_pro():
     conn.close()
     return jsonify({"status": "upgraded"})
 
+# --- CHECK PRO STATUS ENDPOINT ---
+@app.route('/api/get_pro_status', methods=['GET'])
+def get_pro_status():
+    user_id = verify_user(request)
+    if not user_id: return jsonify({"error": "Unauthorized"}), 401
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT is_pro FROM user_profiles WHERE user_id = %s", (user_id,))
+    row = c.fetchone()
+    c.close()
+    conn.close()
+    
+    is_pro = row[0] if row else False
+    return jsonify({"is_pro": is_pro})
+
 # --- ANDROID APP VERIFICATION ---
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
