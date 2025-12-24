@@ -44,6 +44,39 @@
             box-shadow: 0 0 20px #00ff41;
         }
     </style>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script>
+    // 1. Initialize Firebase (Use your same keys from index.html)
+    const firebaseConfig = {
+        apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
+        authDomain: "osint-ai-eaf84.firebaseapp.com",
+        projectId: "osint-ai-eaf84",
+        storageBucket: "osint-ai-eaf84.firebasestorage.app",
+        messagingSenderId: "610494544590",
+        appId: "1:610494544590:web:0d5e1482f430caa329ae9f"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    // 2. Wait for user login state, then verify upgrade
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (user) {
+            const token = await user.getIdToken();
+            
+            // Call the backend to flip the switch
+            fetch('/api/activate_pro', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            }).then(res => {
+                console.log("Upgrade verified with server.");
+            });
+        }
+    });
+</script>
+
 </head>
 <body>
     <h1>ACCESS GRANTED</h1>
