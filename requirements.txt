@@ -5,5 +5,4 @@ google-genai
 Pillow
 firebase-admin
 flask-cors
-Flask-Login
 razorpay
