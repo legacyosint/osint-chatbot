@@ -5,7 +5,6 @@ import base64
 import threading
 import time
 from flask import Flask, render_template, request, redirect, jsonify, send_from_directory, make_response
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import razorpay
 from flask_cors import CORS
 from google import genai
@@ -103,9 +102,6 @@ def home(): return render_template('index.html')
 
 # --- CHECKOUT ROUTE (Razorpay) ---
 @app.route('/create-checkout-session')
-# @login_required  <-- NOTE: verify_user is handling auth in your other routes. 
-# If you are using Flask-Login elsewhere, keep this. If purely Firebase, you might need to check auth differently.
-# Assuming standard Flask-Login is setup or you rely on frontend redirect if not logged in.
 def create_checkout_session():
     try:
         # Create a "Payment Link"
@@ -115,9 +111,8 @@ def create_checkout_session():
             "accept_partial": False,
             "description": "Legacy OSINT Pro Upgrade",
             "customer": {
-                # If current_user is not available (e.g. using Firebase token only), use defaults
                 "name": "Agent", 
-                "email": "user@example.com" 
+                "email": "user@example.com" # You can update this later to capture real email
             },
             "notify": {
                 "sms": False,
@@ -127,12 +122,6 @@ def create_checkout_session():
             "callback_url": DOMAIN + "/success",
             "callback_method": "get"
         }
-
-        # If you have current_user from Flask-Login:
-        if current_user and current_user.is_authenticated:
-             payment_link_data['customer']['email'] = current_user.email
-             if hasattr(current_user, 'name'):
-                 payment_link_data['customer']['name'] = current_user.name
 
         payment_link = razorpay_client.payment_link.create(payment_link_data)
         return redirect(payment_link['short_url'])
