@@ -1,8 +1,16 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.onrender.legacyosint.twa",
-        "sha256_cert_fingerprints": ["57:0C:05:F3:47:C7:AE:90:D5:7F:E2:B3:D8:8A:10:46:4D:11:D2:7D:56:19:84:09:BE:41:0B:3C:2F:D9:F8:A2"]
-      }
-    }]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.onrender.legacyosint.twa",
+      "sha256_cert_fingerprints": [
+        "57:0C:05:F3:47:C7:AE:90:D5:7F:E2:B3:D8:8A:10:46:4D:11:D2:7D:56:19:84:09:BE:41:0B:3C:2F:D9:F8:A2",
+        "E8:91:EB:B2:C7:DE:B3:F3:B2:68:C6:58:D4:9C:0B:70:06:A0:80:0B:FE:35:5F:98:CF:1B:7A:69:DA:E0:07:45"
+      ]
+    }
+  }
+]
