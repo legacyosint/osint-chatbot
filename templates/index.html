@@ -338,6 +338,29 @@
                 </div>
             </div>
 
+            <div class="chat-input-container">
+                <form id="chat-form" style="display: flex; width: 100%; align-items: center; gap: 10px;">
+                    
+                    <label for="image-upload" class="attach-btn">
+                        <span class="material-symbols-outlined">image</span>
+                    </label>
+                    <input type="file" id="image-upload" accept="image/*" style="display: none;">
+            
+                    <label for="doc-upload" class="attach-btn" title="Upload Document (PDF/TXT) - Pro Only">
+                        <span class="material-symbols-outlined">description</span>
+                    </label>
+                    <input type="file" id="doc-upload" accept=".pdf,.txt,.csv,.md" style="display: none;" onchange="handleDocSelect()">
+            
+                    <input type="text" id="user-input" placeholder="Enter intelligence query..." autocomplete="off">
+                    <button type="submit" id="send-btn">
+                        <span class="material-symbols-outlined">send</span>
+                    </button>
+                </form>
+            </div>
+            <div id="doc-preview" style="color: #00ff41; font-size: 0.8rem; padding: 5px 20px; display: none;">
+                📎 Selected: <span id="doc-name"></span>
+            </div>
+
             <div id="chat-scroll-area">
                 <div class="message-container" id="chat-container"></div>
                 <div id="welcome-screen">
@@ -543,7 +566,7 @@
     function copyText(text) { navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!")); }
     function editText(text) { document.getElementById('user-input').value = text; document.getElementById('user-input').focus(); }
 
-    function appendMessage(sender, text, imageData = null) {
+    function appendMessage(sender, text, imageData = null, docName = null) {
         const div = document.createElement('div');
         div.className = `message ${sender}`;
         
@@ -555,8 +578,6 @@
         if (thinkMatch) {
             const thinkingContent = thinkMatch[1].trim();
             mainText = text.replace(thinkMatch[0], '').trim();
-            
-            // Create the Gemini-Style Collapsible Widget
             thoughtHtml = `
             <div class="thinking-container">
                 <details class="thinking-details">
@@ -573,9 +594,14 @@
         let contentHtml = '';
         if (imageData) { contentHtml += `<img src="data:image/jpeg;base64,${imageData}" class="chat-image">`; }
         
-        // Add Thinking Widget ABOVE the main text
+        // --- NEW: SHOW DOCUMENT ATTACHMENT ---
+        if (docName) { 
+            contentHtml += `<div style="font-size:0.85rem; color:var(--accent-color); margin-bottom:5px; display:flex; align-items:center; gap:5px;">
+                <span class="material-symbols-outlined icon-sm">description</span> ${docName}
+            </div>`; 
+        }
+
         if (thoughtHtml) { contentHtml += thoughtHtml; }
-        
         contentHtml += sender === 'bot' ? marked.parse(mainText) : mainText.replace(/\n/g, '<br>');
         
         let actionsHtml = `<div class="action-row"><div class="action-btn" onclick="copyText(\`${mainText.replace(/`/g, "\\`")}\`)"><span class="material-symbols-outlined" style="font-size:14px">content_copy</span> Copy</div>`;
@@ -606,32 +632,57 @@
     async function sendMessage() {
         const input = document.getElementById('user-input');
         const fileInput = document.getElementById('image-upload');
+        const docInput = document.getElementById('doc-upload'); // <--- NEW
+        
         const text = input.value.trim();
         const file = fileInput.files[0];
-        if(!text && !file) return;
+        const docFile = docInput.files[0]; // <--- NEW
+
+        if(!text && !file && !docFile) return;
+
         if(!currentSessionId) { await createNewSession(null, true); }
+        
+        // --- UI UPDATES (Show Bubble) ---
         let previewBase64 = null;
         if(file) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async () => {
-                 previewBase64 = reader.result.split(',')[1];
-                 appendMessage('user', text, previewBase64);
+                previewBase64 = reader.result.split(',')[1];
+                // We pass docFile name too so it shows in the bubble
+                appendMessage('user', text, previewBase64, docFile ? docFile.name : null);
             }
-        } else { appendMessage('user', text); }
+        } else { 
+            appendMessage('user', text, null, docFile ? docFile.name : null); 
+        }
+
+        // --- CLEAR INPUTS ---
         input.value = '';
-        clearFile();
+        clearFile(); // This now clears docs too because of your previous update
+        
+        // --- SEND TO SERVER ---
         const loadingId = appendLoading();
         const formData = new FormData();
         formData.append('session_id', currentSessionId);
         formData.append('user_name', currentUserName);
         if(text) formData.append('message', text);
         if(file) formData.append('image', file);
+        if(docFile) formData.append('document', docFile); // <--- NEW
+
         try {
-            const res = await fetch(`${API_URL}/chat`, { method: 'POST', body: formData });
+            const res = await fetch(`${API_URL}/chat`, { 
+                method: 'POST', 
+                headers: { 'Authorization': 'Bearer ' + currentUserToken }, // <--- Added Auth Token
+                body: formData 
+            });
             const data = await res.json();
             document.getElementById(loadingId).remove();
-            appendMessage('bot', data.reply);
+            
+            if (data.error) {
+                appendMessage('bot', `Error: ${data.error}`);
+            } else {
+                appendMessage('bot', data.reply);
+            }
             loadSessions();
         } catch(e) {
             document.getElementById(loadingId).remove();
@@ -733,7 +784,7 @@
 
 <ul class="pro-features">
     <li><span class="check-icon">>></span> Unlimited Intelligence Uploads</li>
-    <li><span class="check-icon">>></span> Priority Neural Processing</li>
+    <li><span class="check-icon">>></span> Unlimited Document Scraping & Uploads</li>
     <li><span class="check-icon">>></span> Deep Web Scraper Access</li>
     <li><span class="check-icon">>></span> Support Development</li>
 </ul>
@@ -855,6 +906,19 @@
     function closeSubModal(e) {
         if (e.target.id === 'sub-modal-overlay') {
             document.getElementById('sub-modal-overlay').style.display = 'none';
+        }
+    }
+
+    function handleDocSelect() {
+        const fileInput = document.getElementById('doc-upload');
+        const preview = document.getElementById('doc-preview');
+        const nameSpan = document.getElementById('doc-name');
+        
+        if (fileInput.files.length > 0) {
+            preview.style.display = 'block';
+            nameSpan.innerText = fileInput.files[0].name;
+        } else {
+            preview.style.display = 'none';
         }
     }
 </script>
