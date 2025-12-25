@@ -4,8 +4,9 @@ import psycopg2
 import base64
 import threading
 import time
-from datetime import datetime, date # Add 'date' here
+from datetime import datetime, date 
 from flask import Flask, render_template, request, redirect, jsonify, send_from_directory, make_response
+from pypdf import PdfReader
 import razorpay
 from flask_cors import CORS
 from google import genai
@@ -283,62 +284,85 @@ def chat():
         session_id = request.form.get('session_id')
         user_text = request.form.get('message', '')
         image_file = request.files.get('image')
+        doc_file = request.files.get('document') # <--- NEW: Capture Document
 
-        # --- NEW: CHECK LIMITS ---
+        # --- 1. CHECK LIMITS & PRO STATUS ---
         has_image = True if image_file else False
-        allowed, status = check_and_update_limits(user_id, is_image_upload=has_image)
         
+        # Check basic image limits first
+        allowed, status = check_and_update_limits(user_id, is_image_upload=has_image)
         if not allowed:
-            # If limit reached, return a specific error
             return jsonify({
-                "reply": "⚠️ **DAILY LIMIT REACHED**\nYou have used your 5 free image uploads for today.[UPGRADE TO PRO](/create-checkout-session) for unlimited access."
+                "reply": "⚠️ **DAILY LIMIT REACHED**\nYou have used your free uploads for today.\n [UPGRADE TO PRO](/create-checkout-session) for unlimited access."
             })
+
+        # --- 2. DOCUMENT UPLOAD (PRO ONLY) ---
+        extracted_text = ""
+        if doc_file:
+            # Check Pro Status specifically for documents
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute("SELECT is_pro FROM user_profiles WHERE user_id = %s", (user_id,))
+            row = c.fetchone()
+            is_pro = row[0] if row else False
+            c.close()
+            conn.close()
+
+            if not is_pro:
+                return jsonify({
+                    "reply": "🔒 **PRO FEATURE LOCKED**\nDocument analysis and data scraping is available for **Pro Agents** only.\n [UPGRADE TO PRO](/create-checkout-session) to unlock."
+                })
+
+            # --- 3. SCRAPE DATA FROM DOCUMENT ---
+            try:
+                filename = doc_file.filename.lower()
+                if filename.endswith('.pdf'):
+                    reader = PdfReader(doc_file)
+                    for page in reader.pages:
+                        extracted_text += page.extract_text() + "\n"
+                elif filename.endswith('.txt') or filename.endswith('.md') or filename.endswith('.csv'):
+                    extracted_text = doc_file.read().decode('utf-8')
+                
+                # Prepend extracted data to user message so AI sees it
+                user_text = f"Analyze this document content:\n\n{extracted_text}\n\nUser Question: {user_text}"
+                
+            except Exception as e:
+                return jsonify({"reply": f"⚠️ Error reading document: {str(e)}"})
+
+        # --- END NEW LOGIC ---
 
         conn = get_db_connection()
         c = conn.cursor()
         
-        # 1. Fetch History
+        # Fetch History
         c.execute("SELECT sender, content, has_image, image_data FROM messages WHERE session_id = %s ORDER BY id DESC LIMIT 5", (session_id,))
         history = c.fetchall()[::-1]
 
         user_profile = get_long_term_memory(user_id)
         
-        # --- SYSTEM PROMPT ---
         system_instruction = f"""
         You are 'OSINT-MIND', a senior cyber-intelligence analyst.
         USER DOSSIER: {user_profile}
         
         INSTRUCTIONS:
-        1. THOUGHT PROCESS:
-           - For complex queries, start with a hidden block: <think> [Reasoning/Plan] </think>.
-           - For simple greetings ("hi"), skip the <think> block.
-        
-        2. FORMATTING RULES (CRITICAL):
-           - Write your actual answer in **PLAIN TEXT** or standard Markdown (bold, lists, etc).
-           - **NEVER** wrap the entire response in a code block. 
-           - **ONLY** use code blocks (```python) when you are providing actual Python code snippets.
-           - Provide clickable links for maps or profiles.
+        1. If a document is provided, analyze its data thoroughly.
+        2. Extract key entities (names, dates, locations) if asked.
+        3. Format output cleanly using Markdown.
         """
 
         contents = []
-        
-        # 2. Add History Context
         for sender, msg, has_img, img_data in history:
             role = "user" if sender == "user" else "model"
             parts = []
             if msg: parts.append(types.Part.from_text(text=msg))
-            
             if has_img and img_data:
                 try:
                     if len(img_data) > 100: 
                         image_bytes = base64.b64decode(img_data)
                         parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
-                except Exception as e:
-                    print(f"Skipping bad history image: {e}")
-            
+                except: pass
             if parts: contents.append(types.Content(role=role, parts=parts))
         
-        # 3. Add Current Message
         current_parts = []
         if user_text: current_parts.append(types.Part.from_text(text=user_text))
         
@@ -350,44 +374,33 @@ def chat():
                 img = img.convert('RGB')
                 img.save(buf, format='JPEG')
                 image_bytes = buf.getvalue()
-                
                 if len(image_bytes) > 0:
                     current_parts.append(types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"))
                     image_b64 = base64.b64encode(image_bytes).decode('utf-8')
-            except Exception as e:
-                print(f"Image Error: {e}")
-                pass 
+            except: pass 
 
         if current_parts:
             contents.append(types.Content(role="user", parts=current_parts))
 
-        # 4. Generate Response
         response = client.models.generate_content(
             model="gemini-2.0-flash",
             contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.7
-            )
+            config=types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.7)
         )
         ai_reply = response.text
 
-        # 5. Save & Return
+        # Save to DB (We don't save the full extracted text to DB to save space, just the user prompt)
+        # Or you can save a marker like [DOCUMENT UPLOADED]
+        save_text = user_text if len(user_text) < 2000 else user_text[:200] + "... [TRUNCATED DOC]"
+        
         c.execute("INSERT INTO messages (session_id, sender, content, has_image, image_data) VALUES (%s, %s, %s, %s, %s)",
-                  (session_id, "user", user_text, bool(image_b64), image_b64))
+                  (session_id, "user", save_text, bool(image_b64), image_b64))
         c.execute("INSERT INTO messages (session_id, sender, content, has_image, image_data) VALUES (%s, %s, %s, %s, %s)",
                   (session_id, "bot", ai_reply, False, None))
         conn.commit()
         
         if user_text:
-            threading.Thread(target=update_long_term_memory, args=(user_id, user_text, ai_reply)).start()
-
-        if len(history) == 0:
-            try:
-                t_resp = client.models.generate_content(model="gemini-2.0-flash", contents=f"Generate 3-word title: {user_text}")
-                c.execute("UPDATE sessions SET title = %s WHERE id = %s", (t_resp.text.strip().replace('"',''), session_id))
-                conn.commit()
-            except: pass
+            threading.Thread(target=update_long_term_memory, args=(user_id, save_text, ai_reply)).start()
 
         c.close()
         conn.close()
