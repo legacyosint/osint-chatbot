@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="manifest" href="/manifest.json">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -338,29 +338,6 @@
                 </div>
             </div>
 
-            <div class="chat-input-container">
-                <form id="chat-form" style="display: flex; width: 100%; align-items: center; gap: 10px;">
-                    
-                    <label for="image-upload" class="attach-btn">
-                        <span class="material-symbols-outlined">image</span>
-                    </label>
-                    <input type="file" id="image-upload" accept="image/*" style="display: none;">
-            
-                    <label for="doc-upload" class="attach-btn" title="Upload Document (PDF/TXT) - Pro Only">
-                        <span class="material-symbols-outlined">description</span>
-                    </label>
-                    <input type="file" id="doc-upload" accept=".pdf,.txt,.csv,.md" style="display: none;" onchange="handleDocSelect()">
-            
-                    <input type="text" id="user-input" placeholder="Enter intelligence query..." autocomplete="off">
-                    <button type="submit" id="send-btn">
-                        <span class="material-symbols-outlined">send</span>
-                    </button>
-                </form>
-            </div>
-            <div id="doc-preview" style="color: #00ff41; font-size: 0.8rem; padding: 5px 20px; display: none;">
-                📎 Selected: <span id="doc-name"></span>
-            </div>
-
             <div id="chat-scroll-area">
                 <div class="message-container" id="chat-container"></div>
                 <div id="welcome-screen">
@@ -380,11 +357,23 @@
                         <img id="image-preview-element" class="preview-thumb">
                         <div class="remove-file-btn" onclick="clearFile()"><span class="material-symbols-outlined" style="font-size: 14px;">close</span></div>
                     </div>
+                    
+                    <div id="doc-preview" style="display:none; color:#00ff41; font-size:0.8rem; margin-bottom:5px; padding-left:5px;">
+                         📎 <span id="doc-name"></span>
+                         <span onclick="clearFile()" style="cursor:pointer; color:#666; margin-left:10px;">(x)</span>
+                    </div>
+
                     <div class="input-row">
-                        <input type="file" id="image-upload" style="display:none" onchange="handleFileSelect()">
-                        <label for="image-upload" style="cursor:pointer; color:var(--text-secondary); padding: 5px;">
+                        <input type="file" id="image-upload" style="display:none" onchange="handleFileSelect()" accept="image/*">
+                        <label for="image-upload" style="cursor:pointer; color:var(--text-secondary); padding: 5px;" title="Upload Image">
                             <span class="material-symbols-outlined">attach_file</span>
                         </label>
+
+                        <input type="file" id="doc-upload" style="display:none" onchange="handleDocSelect()" accept=".pdf,.txt,.csv,.md">
+                        <label for="doc-upload" style="cursor:pointer; color:var(--text-secondary); padding: 5px;" title="Upload Document (Pro)">
+                            <span class="material-symbols-outlined">description</span>
+                        </label>
+
                         <textarea id="user-input" rows="1" placeholder="Enter target data..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onkeydown="handleEnter(event)"></textarea>
                         <button class="send-btn" onclick="sendMessage()"><span class="material-symbols-outlined icon-sm">send</span></button>
                     </div>
@@ -546,6 +535,7 @@
     let currentSessionId = null;
     const API_URL = '';
     
+    // --- FILE HANDLING ---
     function handleFileSelect() {
         const file = document.getElementById('image-upload').files[0];
         if (file) {
@@ -557,15 +547,37 @@
             reader.readAsDataURL(file);
         }
     }
+
+    // NEW: Handle Document Selection
+    function handleDocSelect() {
+        const fileInput = document.getElementById('doc-upload');
+        const preview = document.getElementById('doc-preview');
+        const nameSpan = document.getElementById('doc-name');
+        
+        if (fileInput.files.length > 0) {
+            preview.style.display = 'block';
+            nameSpan.innerText = fileInput.files[0].name;
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    // UPDATED: Clear both image and document
     function clearFile() {
         document.getElementById('image-upload').value = '';
         document.getElementById('image-preview-container').style.display = 'none';
         document.getElementById('image-preview-element').src = '';
+        
+        const docInput = document.getElementById('doc-upload');
+        if(docInput) docInput.value = '';
+        const docPreview = document.getElementById('doc-preview');
+        if(docPreview) docPreview.style.display = 'none';
     }
 
     function copyText(text) { navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!")); }
     function editText(text) { document.getElementById('user-input').value = text; document.getElementById('user-input').focus(); }
 
+    // UPDATED: Append Message (Shows Doc Name)
     function appendMessage(sender, text, imageData = null, docName = null) {
         const div = document.createElement('div');
         div.className = `message ${sender}`;
@@ -573,7 +585,6 @@
         let mainText = text;
         let thoughtHtml = '';
         
-        // --- PARSE "THINKING" TAGS ---
         const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/);
         if (thinkMatch) {
             const thinkingContent = thinkMatch[1].trim();
@@ -587,14 +598,13 @@
                     </summary>
                     <div class="thinking-content">${thinkingContent}</div>
                 </details>
-            </div>
-            `;
+            </div>`;
         }
 
         let contentHtml = '';
         if (imageData) { contentHtml += `<img src="data:image/jpeg;base64,${imageData}" class="chat-image">`; }
         
-        // --- NEW: SHOW DOCUMENT ATTACHMENT ---
+        // Display Document Name
         if (docName) { 
             contentHtml += `<div style="font-size:0.85rem; color:var(--accent-color); margin-bottom:5px; display:flex; align-items:center; gap:5px;">
                 <span class="material-symbols-outlined icon-sm">description</span> ${docName}
@@ -629,50 +639,50 @@
         }
     }
 
+    // --- SEND MESSAGE (Combines Text + Image + Doc) ---
     async function sendMessage() {
         const input = document.getElementById('user-input');
         const fileInput = document.getElementById('image-upload');
-        const docInput = document.getElementById('doc-upload'); // <--- NEW
+        const docInput = document.getElementById('doc-upload'); 
         
         const text = input.value.trim();
         const file = fileInput.files[0];
-        const docFile = docInput.files[0]; // <--- NEW
+        const docFile = docInput ? docInput.files[0] : null;
 
         if(!text && !file && !docFile) return;
 
         if(!currentSessionId) { await createNewSession(null, true); }
         
-        // --- UI UPDATES (Show Bubble) ---
+        // UI: Show User Bubble
         let previewBase64 = null;
         if(file) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = async () => {
                 previewBase64 = reader.result.split(',')[1];
-                // We pass docFile name too so it shows in the bubble
                 appendMessage('user', text, previewBase64, docFile ? docFile.name : null);
             }
         } else { 
             appendMessage('user', text, null, docFile ? docFile.name : null); 
         }
 
-        // --- CLEAR INPUTS ---
+        // Clear Inputs
         input.value = '';
-        clearFile(); // This now clears docs too because of your previous update
+        clearFile();
         
-        // --- SEND TO SERVER ---
+        // Send to Server
         const loadingId = appendLoading();
         const formData = new FormData();
         formData.append('session_id', currentSessionId);
         formData.append('user_name', currentUserName);
         if(text) formData.append('message', text);
         if(file) formData.append('image', file);
-        if(docFile) formData.append('document', docFile); // <--- NEW
+        if(docFile) formData.append('document', docFile);
 
         try {
             const res = await fetch(`${API_URL}/chat`, { 
                 method: 'POST', 
-                headers: { 'Authorization': 'Bearer ' + currentUserToken }, // <--- Added Auth Token
+                headers: { 'Authorization': 'Bearer ' + currentUserToken },
                 body: formData 
             });
             const data = await res.json();
