@@ -413,124 +413,97 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG (Add your keys back here) ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyD8tEMKd82XQ4PikhUCjZTA1iQ-XbAhLYw",
-      authDomain: "osint-ai-eaf84.firebaseapp.com",
-      projectId: "osint-ai-eaf84",
-      storageBucket: "osint-ai-eaf84.firebasestorage.app",
-      messagingSenderId: "610494544590",
-      appId: "1:610494544590:web:0d5e1482f430caa329ae9f"
+    // --- MOCK AUTH CONFIGURATION (No Real Firebase) ---
+    
+    // 1. Define the Mock User
+    const MOCK_USER = {
+      uid: "mock_user_123", // Matches the ID in your Python app.py
+      displayName: "mock agent",
+      photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+      email: "chef@sustainabite.app"
     };
 
-    // Initialize Firebase
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const auth = firebase.auth();
-    let currentUserToken = null;
-    let currentUserName = "Agent";
+    let currentUserToken = "mock-token-xyz"; // Dummy token
+    let currentUserName = MOCK_USER.displayName;
 
-    // --- LOGIN FUNCTION (FIXED) ---
+    // --- MOCK LOGIN FUNCTION ---
     function loginWithGoogle() {
-        console.log("Attempting Google Login...");
-        const provider = new firebase.auth.GoogleAuthProvider();
-
-        // Use Popup first (Best for Web/PWA)
-        auth.signInWithPopup(provider)
-            .then((result) => {
-                console.log("Login success:", result.user.email);
-                // The onAuthStateChanged listener handles the UI updates
-            })
-            .catch((error) => {
-                console.error("Popup Failed:", error);
-
-                // ONLY fallback to redirect if popup is strictly blocked
-                if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-                    auth.signInWithRedirect(provider);
-                } else {
-                    alert("Login Error: " + error.message);
-                }
-            });
+        console.log("Mock Login Triggered...");
+        
+        // Simulate a short loading delay for realism
+        const btn = document.querySelector('.login-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "Signing in...";
+        
+        setTimeout(() => {
+            handleMockSession(MOCK_USER);
+            btn.innerHTML = originalText;
+        }, 800);
     }
 
-    // --- HANDLE REDIRECT RESULT ---
-    // This runs automatically on page load to catch users returning from a Redirect login
-    auth.getRedirectResult()
-        .then((result) => {
-            if (result.user) console.log("Recovered from redirect login");
-        })
-        .catch((error) => {
-            console.error("Redirect Verify Error:", error);
-        });
-
-    // --- MONITOR AUTH STATE ---
-    // This triggers whenever the user logs in (via Popup OR Redirect)
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            console.log("User detected:", user.email);
-            currentUserToken = await user.getIdToken();
-            currentUserName = user.displayName || "Agent";
-            
-
-            // Update UI
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('app-content').style.filter = 'none';
-            document.getElementById('app-content').style.pointerEvents = 'all';
-
-            // Set Headers
-            document.getElementById('header-name').innerText = currentUserName;
-            const photo = user.photoURL || 'https://www.gravatar.com/avatar/?d=mp';
-            document.getElementById('header-img').src = photo;
-            document.getElementById('welcome-user-name').innerText = currentUserName.split(' ')[0];
-
-            // Set Profile Modal Data
-            document.getElementById('modal-name').innerText = currentUserName;
-            document.getElementById('modal-email').innerText = user.email;
-            document.getElementById('modal-img').src = photo;
-            document.getElementById('modal-joined').innerText = new Date(user.metadata.creationTime).toLocaleDateString();
-    
-            // CHECK PRO STATUS
-            fetch('/api/get_pro_status', {
-                headers: { 'Authorization': 'Bearer ' + currentUserToken }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.is_pro) {
-                    // Add badge to header name
-                    const badge = ' <span style="background:#00ff41; color:black; font-size:0.7rem; padding:2px 6px; border-radius:4px; font-weight:bold; vertical-align:middle;">PRO</span>';
-                    document.getElementById('header-name').innerHTML += badge;
-                    
-                    // Add badge to profile modal name
-                    document.getElementById('modal-name').innerHTML += badge;
-                    
-                    // Hide the "Upgrade" button in sidebar since they already have it
-                    const upgradeBtn = document.querySelector('.pro-watermark-btn');
-                    if(upgradeBtn) upgradeBtn.style.display = 'none';
-                }
-            });
-            
-            // Load Chats
-            loadSessions();
-        } else {
-            console.log("No user signed in");
-            document.getElementById('login-overlay').style.display = 'flex';
-        }
-    });
-
+    // --- LOGOUT FUNCTION ---
     function logout() { 
-        auth.signOut().then(() => location.reload()); 
+        // Just reload the page to "logout"
+        location.reload(); 
     }
 
-    // Intercept Fetch to add Auth Token
+    // --- HANDLE LOGIN UI UPDATES ---
+    async function handleMockSession(user) {
+        console.log("User detected:", user.email);
+        
+        currentUserName = user.displayName;
+
+        // 1. Hide Login Overlay
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-content').style.filter = 'none';
+        document.getElementById('app-content').style.pointerEvents = 'all';
+
+        // 2. Set Header Info
+        document.getElementById('header-name').innerText = currentUserName;
+        document.getElementById('header-img').src = user.photoURL;
+        document.getElementById('welcome-user-name').innerText = currentUserName.split(' ')[0];
+
+        // 3. Set Profile Modal Data
+        document.getElementById('modal-name').innerText = currentUserName;
+        document.getElementById('modal-email').innerText = user.email;
+        document.getElementById('modal-img').src = user.photoURL;
+        document.getElementById('modal-joined').innerText = new Date().toLocaleDateString();
+
+        // 4. CHECK PRO STATUS (Calls your Python Mock Backend)
+        try {
+            const res = await fetch('/api/get_pro_status', {
+                headers: { 'Authorization': 'Bearer ' + currentUserToken }
+            });
+            const data = await res.json();
+            
+            if (data.is_pro) {
+                // Add PRO Badge
+                const badge = ' <span style="background:#00ff41; color:black; font-size:0.7rem; padding:2px 6px; border-radius:4px; font-weight:bold; vertical-align:middle;">PRO</span>';
+                document.getElementById('header-name').innerHTML += badge;
+                document.getElementById('modal-name').innerHTML += badge;
+                
+                // Hide Upgrade Button
+                const upgradeBtn = document.querySelector('.pro-watermark-btn');
+                if(upgradeBtn) upgradeBtn.style.display = 'none';
+            }
+        } catch (e) {
+            console.error("Mock Pro Check Failed:", e);
+        }
+        
+        // 5. Load History
+        loadSessions();
+    }
+
+    // --- INTERCEPT FETCH (Add Mock Token) ---
     const originalFetch = window.fetch;
     window.fetch = async (url, options = {}) => {
         if (!options.headers) options.headers = {};
-        if (currentUserToken) options.headers['Authorization'] = `Bearer ${currentUserToken}`;
+        // Always send the dummy token so backend doesn't complain (though we disabled the check)
+        options.headers['Authorization'] = `Bearer ${currentUserToken}`;
         return originalFetch(url, options);
     };
 </script>
-
+    
 <script>
     let currentSessionId = null;
     const API_URL = '';
