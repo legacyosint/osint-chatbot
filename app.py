@@ -12,9 +12,11 @@ from flask_cors import CORS
 from google import genai
 from google.genai import types
 from PIL import Image
-import firebase_admin
-from firebase_admin import credentials, auth
 import io
+
+# --- MOCK LOGIN: Firebase imports removed ---
+# import firebase_admin
+# from firebase_admin import credentials, auth
 
 app = Flask(__name__)
 CORS(app)
@@ -22,24 +24,25 @@ CORS(app)
 # --- CONFIGURATION ---
 api_key = os.getenv("GEMINI_API_KEY") 
 db_url = os.getenv("DATABASE_URL")
-firebase_creds_json = os.getenv("FIREBASE_CREDENTIALS")
+# firebase_creds_json = os.getenv("FIREBASE_CREDENTIALS") # Disabled for Mock
 
 # Razorpay Config
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_YOUR_KEY_ID')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'YOUR_KEY_SECRET')
 
+# Note: This 'auth' is for Razorpay, keep this!
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
-DOMAIN = 'https://osint-chatbot.onrender.com' # Change to http://127.0.0.1:5000 for local testing
+DOMAIN = 'https://osint-chatbot.onrender.com' 
 
-# --- FIREBASE SETUP ---
-if firebase_creds_json and not firebase_admin._apps:
-    try:
-        cred_dict = json.loads(firebase_creds_json)
-        cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
-    except Exception as e:
-        print(f"Firebase Init Error: {e}")
+# --- FIREBASE SETUP (DISABLED) ---
+# if firebase_creds_json and not firebase_admin._apps:
+#     try:
+#         cred_dict = json.loads(firebase_creds_json)
+#         cred = credentials.Certificate(cred_dict)
+#         firebase_admin.initialize_app(cred)
+#     except Exception as e:
+#         print(f"Firebase Init Error: {e}")
 
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -62,8 +65,6 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE, sender TEXT, content TEXT, has_image BOOLEAN, image_data TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     c.execute('''CREATE TABLE IF NOT EXISTS user_profiles (user_id TEXT PRIMARY KEY, profile_data TEXT, last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
 
-    # --- NEW COLUMNS FOR LIMITS ---
-    # We use ALTER TABLE to add them safely to your existing database
     try:
         c.execute("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS is_pro BOOLEAN DEFAULT FALSE")
         c.execute("ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS daily_image_count INTEGER DEFAULT 0")
@@ -100,18 +101,20 @@ def update_long_term_memory(user_id, last_message, last_reply):
         conn.close()
     except: pass
 
+# --- MOCK VERIFICATION FUNCTION ---
 def verify_user(req):
-    auth_header = req.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith("Bearer "): return None
-    try:
-        return auth.verify_id_token(auth_header.split("Bearer ")[1])['uid']
-    except: return None
+    # This ignores the token and always logs in as "mock_user_123"
+    # This allows Razorpay to test the app without real Google Credentials
+    return "mock_user_123"
+
+    # OLD FIREBASE LOGIC (Commented out):
+    # auth_header = req.headers.get('Authorization')
+    # if not auth_header or not auth_header.startswith("Bearer "): return None
+    # try:
+    #     return auth.verify_id_token(auth_header.split("Bearer ")[1])['uid']
+    # except: return None
 
 def check_and_update_limits(user_id, is_image_upload=False):
-    """
-    Returns True if allowed, False if limit reached.
-    Automatically resets counts if it's a new day.
-    """
     conn = get_db_connection()
     c = conn.cursor()
     
@@ -126,7 +129,6 @@ def check_and_update_limits(user_id, is_image_upload=False):
         is_pro, count, last_date = False, 0, datetime.now().date()
     else:
         is_pro, count, last_date = row
-        # Ensure last_date is a python date object
         if isinstance(last_date, str): 
             last_date = datetime.strptime(last_date, "%Y-%m-%d").date()
 
@@ -139,7 +141,6 @@ def check_and_update_limits(user_id, is_image_upload=False):
     # 3. FREE USERS: Check Reset
     today = datetime.now().date()
     if last_date < today:
-        # It's a new day, reset count
         count = 0
         c.execute("UPDATE user_profiles SET daily_image_count = 0, last_image_date = %s WHERE user_id = %s", (today, user_id))
         conn.commit()
@@ -151,7 +152,6 @@ def check_and_update_limits(user_id, is_image_upload=False):
             conn.close()
             return False, "limit_reached"
         
-        # Increment count
         c.execute("UPDATE user_profiles SET daily_image_count = daily_image_count + 1 WHERE user_id = %s", (user_id,))
         conn.commit()
 
@@ -166,10 +166,8 @@ def home(): return render_template('index.html')
 # --- CHECKOUT ROUTE (Razorpay) ---
 @app.route('/create-checkout-session')
 def create_checkout_session():
-    # 1. Get the plan type from the URL (default to monthly)
     plan_type = request.args.get('plan', 'monthly')
     
-    # 2. Set price based on plan
     if plan_type == 'yearly':
         amount = 6000  # $60.00
         desc = "Legacy Pro (Yearly)"
@@ -184,8 +182,8 @@ def create_checkout_session():
             "accept_partial": False,
             "description": desc,
             "customer": {
-                "name": "Agent",
-                "email": "user@example.com"
+                "name": "Razorpay Tester", # Changed name for context
+                "email": "test@razorpay.com" # Changed email for context
             },
             "notify": {"sms": False, "email": True},
             "callback_url": DOMAIN + "/success",
@@ -197,16 +195,23 @@ def create_checkout_session():
 
     except Exception as e:
         return jsonify(error=str(e)), 403
+
 # --- SUCCESS ROUTE ---
 @app.route('/success')
 def success():
-    # Razorpay sends data in the URL params
     payment_status = request.args.get('razorpay_payment_link_status')
     
     if payment_status == 'paid':
-        # TODO: Ideally, you verify the user here and update DB
-        # Since this is a redirect, you might need to handle the state update 
-        # based on your specific auth flow (Firebase vs Flask-Login)
+        # Automatically upgrade the mock user on success
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute("""
+            INSERT INTO user_profiles (user_id, is_pro) VALUES ('mock_user_123', TRUE) 
+            ON CONFLICT (user_id) DO UPDATE SET is_pro = TRUE
+        """)
+        conn.commit()
+        c.close()
+        conn.close()
         return render_template('success.html')
     else:
         return "Payment Failed or Cancelled", 400
@@ -220,7 +225,6 @@ def cancel_subscription():
     conn = get_db_connection()
     c = conn.cursor()
     try:
-        # Set is_pro to FALSE
         c.execute("UPDATE user_profiles SET is_pro = FALSE WHERE user_id = %s", (user_id,))
         conn.commit()
         status = "cancelled"
@@ -284,12 +288,11 @@ def chat():
         session_id = request.form.get('session_id')
         user_text = request.form.get('message', '')
         image_file = request.files.get('image')
-        doc_file = request.files.get('document') # <--- NEW: Capture Document
+        doc_file = request.files.get('document') 
 
         # --- 1. CHECK LIMITS & PRO STATUS ---
         has_image = True if image_file else False
         
-        # Check basic image limits first
         allowed, status = check_and_update_limits(user_id, is_image_upload=has_image)
         if not allowed:
             return jsonify({
@@ -299,7 +302,6 @@ def chat():
         # --- 2. DOCUMENT UPLOAD (PRO ONLY) ---
         extracted_text = ""
         if doc_file:
-            # Check Pro Status specifically for documents
             conn = get_db_connection()
             c = conn.cursor()
             c.execute("SELECT is_pro FROM user_profiles WHERE user_id = %s", (user_id,))
@@ -313,7 +315,6 @@ def chat():
                     "reply": "🔒 **PRO FEATURE LOCKED**\nDocument analysis and data scraping is available for **Pro Agents** only.\n [UPGRADE TO PRO](/create-checkout-session) to unlock."
                 })
 
-            # --- 3. SCRAPE DATA FROM DOCUMENT ---
             try:
                 filename = doc_file.filename.lower()
                 if filename.endswith('.pdf'):
@@ -323,13 +324,10 @@ def chat():
                 elif filename.endswith('.txt') or filename.endswith('.md') or filename.endswith('.csv'):
                     extracted_text = doc_file.read().decode('utf-8')
                 
-                # Prepend extracted data to user message so AI sees it
                 user_text = f"Analyze this document content:\n\n{extracted_text}\n\nUser Question: {user_text}"
                 
             except Exception as e:
                 return jsonify({"reply": f"⚠️ Error reading document: {str(e)}"})
-
-        # --- END NEW LOGIC ---
 
         conn = get_db_connection()
         c = conn.cursor()
@@ -389,8 +387,6 @@ def chat():
         )
         ai_reply = response.text
 
-        # Save to DB (We don't save the full extracted text to DB to save space, just the user prompt)
-        # Or you can save a marker like [DOCUMENT UPLOADED]
         save_text = user_text if len(user_text) < 2000 else user_text[:200] + "... [TRUNCATED DOC]"
         
         c.execute("INSERT INTO messages (session_id, sender, content, has_image, image_data) VALUES (%s, %s, %s, %s, %s)",
@@ -417,7 +413,6 @@ def activate_pro():
     
     conn = get_db_connection()
     c = conn.cursor()
-    # Turn on Pro Status
     c.execute("""
         INSERT INTO user_profiles (user_id, is_pro) VALUES (%s, TRUE) 
         ON CONFLICT (user_id) DO UPDATE SET is_pro = TRUE
@@ -427,7 +422,6 @@ def activate_pro():
     conn.close()
     return jsonify({"status": "upgraded"})
 
-# --- CHECK PRO STATUS ENDPOINT ---
 @app.route('/api/get_pro_status', methods=['GET'])
 def get_pro_status():
     user_id = verify_user(request)
@@ -450,7 +444,6 @@ def manifest():
     response.headers['Content-Type'] = 'application/json'
     return response
 
-# --- ANDROID APP VERIFICATION ---
 @app.route('/.well-known/assetlinks.json')
 def assetlinks():
     return send_from_directory('.', 'assetlinks.json')
@@ -459,7 +452,6 @@ def assetlinks():
 def privacy():
     return render_template('privacy.html')
 
-# --- LEGAL & SUPPORT PAGES ---
 @app.route('/terms')
 def terms():
     return render_template('terms.html')
@@ -472,7 +464,6 @@ def refund_policy():
 def support():
     return render_template('support.html')
 
-# --- SERVICE WORKER ---
 @app.route('/sw.js')
 def service_worker():
     response = make_response(send_from_directory('.', 'sw.js'))
